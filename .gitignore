@@ -1,0 +1,21 @@
+# Node modules
+node_modules/
+# Next.js build output
+.next/
+out/
+build/
+dist/
+
+# Python Virtual Environments
+venv/
+.env
+__pycache__/
+*.pyc
+
+# IDEs and OS files
+.DS_Store
+.vscode/
+.idea/
+
+# Contracts
+.clar/
