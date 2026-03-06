@@ -24,6 +24,18 @@
 - Verify user quest completions strictly through on-chain historic transactions using the Hiro API.
 - Gamified user experience powered by **Framer Motion** animations.
 
+## 🛠️ Navigation & Main Features (Judges' Guide)
+
+To help you navigate Aegis BTC smoothly, here is a breakdown of the core functions accessible via the top navigation header:
+
+- **1. Builder (AI Contract Builder):** A "No-Code" zone. Input a natural language prompt, and our AI (powered by Gemini) writes deploy-ready Clarity code for you dynamically. If an API key isn't provided, the platform smartly falls back to our robust offline local agent to fetch audited Clarity templates.
+- **2. Risks (AI Risk Analyzer):** Paste experimental Clarity contract code and let our analyzer simulate and detect potential vulnerabilities, unhandled panics, and signature risks instantly.
+- **3. Quests (Stacks Builder Hub):** A gamified learn-and-earn portal. Complete tasks within the Stacks ecosystem. Your progress is completely on-chain! Task verifications rely on historic Hiro API Stacks blockchain data (e.g., verifying if the user has deployed a testnet smart contract).
+- **4. Vaults (sBTC Staking):** This is the core protocol! Deposit sBTC to earn yield streams over time. 
+- **5. Borrow (Self-Repaying Loans):** Integrated functionality allowing users to overcollateralize their sBTC to borrow synthetic stablecoins (`USDCx`), fully executing testnet and mainnet contract calls via Leather integration.
+- **6. Swap (DEX Interface):** A quick swap module specifically meant to trade `sBTC` for `USDCx` on the unified protocol.
+- **7. Reputation (X402):** A web3 social gateway where users mint credentials, claim completion bounties via on-chain validation, and aggregate a universal hackathon identity.
+
 ## 🏗️ Technical Architecture & Monorepo Structure
 
 Aegis BTC is structured as a monolithic repository grouping all related domains together for maximum development efficiency:
