@@ -10,6 +10,10 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "AegisBTC | Premium sBTC Yield Protocol",
   description: "Deposit sBTC, stream yield, and secure your transactions with AI risk analysis.",
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({

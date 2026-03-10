@@ -95,20 +95,21 @@ export default function Navbar() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-20">
                     {/* Logo */}
-                    <Link href="/" className="flex items-center gap-2 group z-50">
-                        <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 p-0.5">
-                            <div className="absolute inset-0 bg-primary-500/50 blur-md group-hover:bg-primary-400/60 transition-colors" />
-                            <div className="relative flex items-center justify-center w-full h-full bg-surface-950 rounded-[10px]">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-primary-500">
-                                    <path d="M12 2L2 7H22L12 2Z" fill="currentColor" />
-                                    <path d="M2 17L12 22L22 17H2Z" fill="currentColor" />
-                                    <path d="M22 12L12 17L2 12V12L12 7L22 12V12Z" fill="currentColor" />
-                                </svg>
+                    <Link href="/" className="flex items-center gap-3 group z-50">
+                        <div className="relative flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 p-0.5 shadow-[0_0_15px_rgba(251,191,36,0.2)]">
+                            <div className="absolute inset-0 bg-amber-500/50 blur-lg group-hover:bg-amber-400/60 transition-all duration-300" />
+                            <div className="relative flex items-center justify-center w-full h-full bg-surface-950 rounded-[10px] overflow-hidden">
+                                <img src="/logo.png" alt="AegisBTC Logo" className="w-full h-full object-cover scale-110" />
                             </div>
                         </div>
-                        <span className="font-bold text-xl tracking-tight text-white group-hover:text-primary-400 transition-colors">
-                            Aegis<span className="text-primary-500">BTC</span>
-                        </span>
+                        <div className="flex flex-col">
+                            <span className="font-black text-2xl tracking-tighter text-white group-hover:text-amber-400 transition-colors leading-none">
+                                Aegis<span className="text-amber-500">BTC</span>
+                            </span>
+                            <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-amber-500/70">
+                                Premium Protocol
+                            </span>
+                        </div>
                     </Link>
 
                     {/* Navigation Links */}
