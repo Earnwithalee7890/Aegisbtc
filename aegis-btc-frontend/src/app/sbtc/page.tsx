@@ -6,7 +6,7 @@ import { Lightbulb, TrendingUp, Users, Activity, ArrowLeft } from "lucide-react"
 import Link from "next/link";
 
 export default function SBTCPage() {
-    const [stats, setStats] = useState<any>(null);
+    const [stats, setStats] = useState<Record<string, any> | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -58,7 +58,7 @@ export default function SBTCPage() {
                         Most Innovative Use of <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-600">sBTC</span>
                     </h1>
                     <p className="text-surface-300 text-lg md:text-xl max-w-2xl mx-auto font-medium">
-                        Explore live data and new decentralized use-cases leveraging sBTC's unique capabilities within the Aegis ecosystem.
+                        Explore live data and new decentralized use-cases leveraging sBTC&apos;s unique capabilities within the Aegis ecosystem.
                     </p>
                 </motion.div>
 
@@ -95,7 +95,7 @@ export default function SBTCPage() {
 
                         <h2 className="text-2xl font-bold text-white mb-4 mt-12">Live Innovations Utilizing sBTC:</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {stats?.innovations?.map((item: any, i: number) => (
+                            {stats?.innovations?.map((item: { title: string, status: string, desc: string }, i: number) => (
                                 <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + (i * 0.1) }} className="glass-panel p-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 group hover:border-emerald-500/40 transition-colors">
                                     <div className="flex justify-between items-start mb-3">
                                         <h3 className="text-xl font-bold text-emerald-300">{item.title}</h3>

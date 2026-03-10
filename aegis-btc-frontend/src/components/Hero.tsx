@@ -197,7 +197,7 @@ export default function Hero() {
                                 <div className="space-y-2">
                                     <h4 className="text-white font-bold text-xl">Innovation & AI Intelligence</h4>
                                     <p className="text-surface-400 leading-relaxed text-sm">
-                                        Unlike static dashboards, Aegis features a bespoke **AI Risk Analyzer** that performs real-time static analysis on Clarity code. It detects missing validation, "unwrap-panic" risks, and logic errors, protecting users from "Black Swan" events.
+                                        Unlike static dashboards, Aegis features a bespoke **AI Risk Analyzer** that performs real-time static analysis on Clarity code. It detects missing validation, &quot;unwrap-panic&quot; risks, and logic errors, protecting users from &quot;Black Swan&quot; events.
                                     </p>
                                 </div>
                             </div>
