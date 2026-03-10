@@ -1,0 +1,6 @@
+{
+  "buildCommand": "cd aegis-btc-frontend && npm run build",
+  "outputDirectory": "aegis-btc-frontend/.next",
+  "framework": "nextjs",
+  "installCommand": "npm install"
+}

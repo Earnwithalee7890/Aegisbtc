@@ -1,0 +1,40 @@
+{
+  "name": "aegis-btc-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbo",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@stacks/auth": "^7.3.1",
+    "@stacks/connect": "^8.2.5",
+    "@stacks/network": "^7.3.1",
+    "@stacks/transactions": "^7.3.1",
+    "bs58": "^6.0.0",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.34.4",
+    "lucide-react": "^0.576.0",
+    "next": "14.2.35",
+    "postcss": "^8",
+    "react": "^18",
+    "react-dom": "^18",
+    "react-hot-toast": "^2.6.0",
+    "tailwind-merge": "^3.5.0",
+    "tailwindcss": "^3.4.1",
+    "autoprefixer": "^10.4.19"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "crypto-browserify": "^3.12.1",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.35",
+    "puppeteer": "^24.38.0",
+    "stream-browserify": "^3.0.0",
+    "typescript": "^5"
+  }
+}

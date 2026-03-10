@@ -1,0 +1,19 @@
+{
+  "name": "aegis-btc-monorepo",
+  "private": true,
+  "workspaces": [
+    "aegis-btc-frontend",
+    "aegis-btc-backend",
+    "aegis-btc-contracts"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=aegis-btc-frontend",
+    "build": "npm run build --workspace=aegis-btc-frontend",
+    "install-all": "npm install"
+  },
+  "dependencies": {
+    "next": "14.2.35",
+    "react": "^18",
+    "react-dom": "^18"
+  }
+}
