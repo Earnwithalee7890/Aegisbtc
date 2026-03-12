@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { userSession } from "@/components/layout/Navbar";
 import { motion } from "framer-motion";
-import { Vault, ArrowUpRight, ArrowDownRight, Activity, Zap, Sparkles } from "lucide-react";
+import { Vault, ArrowUpRight, ArrowDownRight, Activity, Zap, Sparkles, Calculator } from "lucide-react";
 import { openContractCall } from '@stacks/connect';
 import { STACKS_MAINNET } from '@stacks/network';
 import {
@@ -33,6 +33,11 @@ export default function Vaults() {
     const [isMinting, setIsMinting] = useState(false);
     const [vaultStx, setVaultStx] = useState("0");
     const [vaultSbtc, setVaultSbtc] = useState("0");
+    const [calcAmount, setCalcAmount] = useState("");
+
+    const avgApy = 0.084;
+    const estDaily = (parseFloat(calcAmount) || 0) * (avgApy / 365);
+    const estYearly = (parseFloat(calcAmount) || 0) * avgApy;
 
     // Fetch Real Balance
     useEffect(() => {
@@ -478,6 +483,49 @@ export default function Vaults() {
                                     <span className="text-primary-400 bg-primary-400/10 px-2 py-1 rounded font-medium">Low</span>
                                 </div>
                             </div>
+                        </div>
+                    </motion.div>
+
+                    <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="glass-panel p-6 rounded-3xl border border-primary-500/20"
+                    >
+                        <div className="flex items-center gap-2 mb-6">
+                            <Calculator className="w-5 h-5 text-primary-400" />
+                            <h3 className="text-lg font-semibold text-white">Yield Calculator</h3>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-xs text-surface-400 uppercase tracking-wider font-bold mb-2 block">Investment Amount</label>
+                                <div className="relative">
+                                    <input 
+                                        type="number" 
+                                        value={calcAmount}
+                                        onChange={(e) => setCalcAmount(e.target.value)}
+                                        placeholder="0.00"
+                                        className="w-full bg-surface-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary-500/50 transition-colors"
+                                    />
+                                    <span className="absolute right-4 top-3 text-surface-500 font-bold">sBTC</span>
+                                </div>
+                            </div>
+
+                            <div className="bg-primary-500/5 rounded-2xl p-4 space-y-3">
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-surface-400">Daily Est.</span>
+                                    <span className="text-white font-mono">{estDaily.toFixed(6)} sBTC</span>
+                                </div>
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-surface-400">Yearly Est.</span>
+                                    <span className="text-primary-400 font-bold font-mono">{estYearly.toFixed(4)} sBTC</span>
+                                </div>
+                            </div>
+
+                            <p className="text-[10px] text-surface-500 italic">
+                                * Estimates based on current average APY of 8.4%. Actual yields may vary.
+                            </p>
                         </div>
                     </motion.div>
                 </div>

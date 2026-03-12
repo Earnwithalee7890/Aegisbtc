@@ -439,6 +439,26 @@ export default function SmartContractBuilder() {
                   className="w-full bg-surface-950 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary-500/50 resize-none h-32 mb-4"
                 />
 
+                <div className="mb-4">
+                  <p className="text-xs font-bold text-surface-500 uppercase tracking-widest mb-3">Quick Start Ideas</p>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { icon: "💰", text: "Subscription dapp with recurring STX payments" },
+                      { icon: "🏛️", text: "Multi-sig treasury with voting power" },
+                      { icon: "🎟️", text: "Event ticketing NFT with royalty support" },
+                      { icon: "⚖️", text: "Escrow contract for high-value trades" }
+                    ].map((idea, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setPrompt(idea.text)}
+                        className="px-3 py-2 rounded-lg bg-surface-900 border border-white/5 hover:border-primary-500/30 hover:bg-surface-800 text-xs text-surface-300 transition-all"
+                      >
+                        <span className="mr-1.5">{idea.icon}</span> {idea.text.split(' ').slice(0, 3).join(' ')}...
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <button
                   onClick={handleGenerate}
                   disabled={isGenerating || prompt.trim() === ""}

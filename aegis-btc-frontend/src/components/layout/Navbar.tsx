@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
+import logo from "@/app/logo.png";
 import { Wallet, ChevronDown, Activity, LogOut, Menu, X, Rocket } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
@@ -99,7 +101,14 @@ export default function Navbar() {
                         <div className="relative flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 p-0.5 shadow-[0_0_15px_rgba(251,191,36,0.2)]">
                             <div className="absolute inset-0 bg-amber-500/50 blur-lg group-hover:bg-amber-400/60 transition-all duration-300" />
                             <div className="relative flex items-center justify-center w-full h-full bg-surface-950 rounded-[10px] overflow-hidden">
-                                <img src="/logo.png" alt="AegisBTC Logo" className="w-full h-full object-cover scale-110" />
+                                <Image 
+                                    src={logo} 
+                                    alt="AegisBTC Logo" 
+                                    width={48} 
+                                    height={48} 
+                                    className="w-full h-full object-cover scale-110"
+                                    priority
+                                />
                             </div>
                         </div>
                         <div className="flex flex-col">

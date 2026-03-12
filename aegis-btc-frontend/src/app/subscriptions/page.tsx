@@ -96,6 +96,31 @@ export default function Subscriptions() {
                         Create Yield Stream / Escrow
                     </h2>
 
+
+                    <div className="mb-8">
+                        <p className="text-xs font-bold text-surface-500 uppercase tracking-widest mb-3">Quick Presets</p>
+                        <div className="grid grid-cols-2 gap-3">
+                            {[
+                                { name: "Developer Payroll", recipient: "SP2F500B8DTRK1EANJQ054BRAB8DDKN6QCMXGNFBT", pct: "75" },
+                                { name: "SaaS Subscription", recipient: "SP1P72Z3704V2FEKBWRYM2JP97A49G5XS50BC3F", pct: "15" },
+                                { name: "Community DAO", recipient: "SP3DZ7T2N076MT2R48K34K4G00XAXM46T0BC3G", pct: "10" },
+                                { name: "Content Creator", recipient: "SP2XKV5BC86897TBDCDK5F95S0EGAJ58137BC2", pct: "50" }
+                            ].map((preset, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => {
+                                        setRecipient(preset.recipient);
+                                        setPercentage(preset.pct);
+                                    }}
+                                    className="px-3 py-2 rounded-xl bg-surface-900 border border-white/5 hover:border-accent-500/30 hover:bg-surface-800 text-xs text-left transition-all group"
+                                >
+                                    <p className="text-white font-bold group-hover:text-accent-400 transition-colors">{preset.name}</p>
+                                    <p className="text-surface-500 text-[10px]">{preset.pct}% yield stream</p>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
                     <div className="space-y-6">
                         <div>
                             <label className="block text-sm font-medium text-surface-400 mb-2">Recipient Address (STX/sBTC)</label>

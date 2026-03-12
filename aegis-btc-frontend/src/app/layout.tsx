@@ -11,7 +11,10 @@ export const metadata: Metadata = {
   title: "AegisBTC | Premium sBTC Yield Protocol",
   description: "Deposit sBTC, stream yield, and secure your transactions with AI risk analysis.",
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/logo.png" },
+      { url: "/logo.png", sizes: "32x32", type: "image/png" },
+    ],
     apple: "/logo.png",
   },
 };

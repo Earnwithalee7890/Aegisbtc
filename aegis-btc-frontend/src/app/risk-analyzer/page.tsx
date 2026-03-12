@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ShieldAlert, ShieldCheck, Activity, Terminal, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { toast } from "react-hot-toast";
@@ -13,6 +13,26 @@ export default function RiskAnalyzer() {
         summary: string;
         vulnerability_details: string[];
     } | null>(null);
+    const [history, setHistory] = useState<any[]>([]);
+
+    useEffect(() => {
+        const savedHistory = localStorage.getItem('risk-analyzer-history');
+        if (savedHistory) {
+            setHistory(JSON.parse(savedHistory));
+        }
+    }, []);
+
+    const saveToHistory = (newResult: any, contractCode: string) => {
+        const historyItem = {
+            id: Date.now(),
+            timestamp: new Date().toLocaleString(),
+            code: contractCode,
+            result: newResult
+        };
+        const updatedHistory = [historyItem, ...history.slice(0, 4)];
+        setHistory(updatedHistory);
+        localStorage.setItem('risk-analyzer-history', JSON.stringify(updatedHistory));
+    };
 
     const handleAnalyze = async () => {
         if (!code.trim()) return;
@@ -33,6 +53,7 @@ export default function RiskAnalyzer() {
             if (response.ok) {
                 const data = await response.json();
                 setResult(data);
+                saveToHistory(data, code);
             } else {
                 // Fallback mock response if backend isn't running
                 throw new Error("Backend not reachable");
@@ -52,9 +73,13 @@ export default function RiskAnalyzer() {
                 vulns.push("Use of `unwrap-panic` detected. This could cause the contract to abort unexpectedly.");
             }
             if (score > 85) {
-                setResult({ risk_score: score, summary: "Contract appears generally safe.", vulnerability_details: vulns });
+                const mockData = { risk_score: score, summary: "Contract appears generally safe.", vulnerability_details: vulns };
+                setResult(mockData);
+                saveToHistory(mockData, code);
             } else {
-                setResult({ risk_score: score, summary: "High risk! Critical vulnerabilities detected.", vulnerability_details: vulns });
+                const mockData = { risk_score: score, summary: "High risk! Critical vulnerabilities detected.", vulnerability_details: vulns };
+                setResult(mockData);
+                saveToHistory(mockData, code);
             }
         } finally {
             setIsAnalyzing(false);
@@ -110,6 +135,35 @@ export default function RiskAnalyzer() {
                             </>
                         )}
                     </button>
+
+                    {history.length > 0 && (
+                        <div className="mt-8 pt-6 border-t border-white/5">
+                            <h3 className="text-xs font-bold text-surface-500 uppercase tracking-widest mb-4">Recent Histories</h3>
+                            <div className="space-y-3">
+                                {history.map((item) => (
+                                    <button
+                                        key={item.id}
+                                        onClick={() => {
+                                            setCode(item.code);
+                                            setResult(item.result);
+                                        }}
+                                        className="w-full flex items-center justify-between p-3 rounded-xl bg-surface-900 border border-white/5 hover:border-accent-500/30 transition-all text-left group"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-surface-800 flex items-center justify-center text-xs font-bold" style={{ color: item.result.risk_score > 80 ? '#10b981' : '#ef4444' }}>
+                                                {item.result.risk_score}
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium text-white group-hover:text-accent-400 transition-colors">Scan {item.timestamp.split(',')[1]}</p>
+                                                <p className="text-[10px] text-surface-500">{item.code.slice(0, 20)}...</p>
+                                            </div>
+                                        </div>
+                                        <CheckCircle2 className="w-4 h-4 text-surface-600 group-hover:text-white transition-colors" />
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </motion.div>
 
                 {/* Results Column */}

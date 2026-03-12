@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { BadgeCheck, ShieldAlert, History, Activity, Trophy } from "lucide-react";
+import { BadgeCheck, ShieldAlert, History, Activity, Trophy, Award, Zap, ShieldCheck } from "lucide-react";
 import { useState, useEffect } from "react";
 import { userSession } from "@/components/layout/Navbar";
 import { STACKS_MAINNET } from '@stacks/network';
@@ -176,6 +176,68 @@ export default function Reputation() {
                     </div>
                 </motion.div>
             </div>
+
+            {/* Trust Badges Section */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="mt-12"
+            >
+                <div className="flex items-center gap-3 mb-6">
+                    <Award className="w-6 h-6 text-primary-400" />
+                    <h2 className="text-2xl font-bold text-white">Trust Badges</h2>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {[
+                        { 
+                            name: "Early Adopter", 
+                            icon: <Zap className="w-6 h-6" />, 
+                            description: "Identified as a pioneer in the Aegis ecosystem.", 
+                            unlocked: true,
+                            color: "text-amber-400 bg-amber-400/10 border-amber-500/20"
+                        },
+                        { 
+                            name: "Stacks Guardian", 
+                            icon: <ShieldCheck className="w-6 h-6" />, 
+                            description: "Maintaining high security standards and STX balance.", 
+                            unlocked: score >= 650,
+                            color: "text-primary-400 bg-primary-400/10 border-primary-500/20"
+                        },
+                        { 
+                            name: "Yield Master", 
+                            icon: <Activity className="w-6 h-6" />, 
+                            description: "Active participant in multiple sBTC vault strategies.", 
+                            unlocked: score >= 500,
+                            color: "text-accent-400 bg-accent-400/10 border-accent-500/20"
+                        },
+                        { 
+                            name: "DAO Voter", 
+                            icon: <Trophy className="w-6 h-6" />, 
+                            description: "Engaged in on-chain governance and Stacks ecosystem votes.", 
+                            unlocked: score >= 800,
+                            color: "text-purple-400 bg-purple-400/10 border-purple-500/20"
+                        }
+                    ].map((badge, idx) => (
+                        <div 
+                            key={idx}
+                            className={`glass-panel p-6 rounded-2xl flex flex-col items-center text-center transition-all duration-300 ${badge.unlocked ? 'opacity-100 scale-100' : 'opacity-40 grayscale scale-95'}`}
+                        >
+                            <div className={`p-4 rounded-full mb-4 border ${badge.color}`}>
+                                {badge.icon}
+                            </div>
+                            <h4 className="text-white font-bold mb-2">{badge.name}</h4>
+                            <p className="text-xs text-surface-400 line-clamp-2">{badge.description}</p>
+                            {!badge.unlocked && (
+                                <div className="mt-4 text-[10px] font-bold uppercase tracking-widest text-surface-500">
+                                    Locked
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            </motion.div>
         </div>
     );
 }
