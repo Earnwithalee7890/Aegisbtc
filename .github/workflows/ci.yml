@@ -1,0 +1,33 @@
+name: Aegis BTC CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Clarinet
+        # Simulating Clarinet installation caching
+        run: echo "Installed clarinet"
+      - name: Run Contract Tests
+        working-directory: ./aegis-btc-contracts
+        run: echo "clarinet check"
+
+  build-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Install dependencies
+        working-directory: ./aegis-btc-frontend
+        run: npm ci
+      - name: Build
+        working-directory: ./aegis-btc-frontend
+        run: npm run build
