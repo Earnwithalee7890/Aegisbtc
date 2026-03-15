@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { userSession } from "@/components/layout/Navbar";
 import { STACKS_MAINNET } from '@stacks/network';
 import { principalCV, fetchCallReadOnlyFunction, cvToJSON } from '@stacks/transactions';
+import Leaderboard from "@/components/Leaderboard";
 
 const CONTRACT_ADDRESS = "SP2F500B8DTRK1EANJQ054BRAB8DDKN6QCMXGNFBT";
 const CONTRACT_NAME = "aegis-unified-protocol";
@@ -238,6 +239,7 @@ export default function Reputation() {
                     ))}
                 </div>
             </motion.div>
+            <Leaderboard />
         </div>
     );
 }
