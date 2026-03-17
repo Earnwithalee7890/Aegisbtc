@@ -26,25 +26,38 @@ export default function Subscriptions() {
             setIsLoading(true);
             try {
                 const userData = userSession.loadUserData();
-                const address = userData.profile.stxAddress.testnet;
+                const profile = userData.profile as any;
+                const address = profile?.stxAddress?.mainnet || profile?.stxAddress?.testnet || profile?.stxAddress || "";
+                
+                if (!address) {
+                    setIsLoading(false);
+                    return;
+                }
 
-                const res = await fetchCallReadOnlyFunction({
-                    network: NETWORK,
-                    contractAddress: CONTRACT_ADDRESS,
-                    contractName: CONTRACT_NAME,
-                    functionName: 'get-subscription',
-                    functionArgs: [principalCV(address)],
-                    senderAddress: address
-                });
+                try {
+                    const res = await fetchCallReadOnlyFunction({
+                        network: NETWORK,
+                        contractAddress: CONTRACT_ADDRESS,
+                        contractName: CONTRACT_NAME,
+                        functionName: 'get-subscription',
+                        functionArgs: [principalCV(address)],
+                        senderAddress: address
+                    });
 
-                const result = cvToJSON(res).value;
-                if (result && result.value) {
-                    setActiveSub(result.value);
-                } else {
+                    const resJson = cvToJSON(res);
+                    const result = resJson?.value?.value || resJson?.value;
+                    
+                    if (result && result !== "none") {
+                        setActiveSub(String(result));
+                    } else {
+                        setActiveSub(null);
+                    }
+                } catch (e) {
+                    console.warn("[Subscriptions] get-subscription skipped", e);
                     setActiveSub(null);
                 }
             } catch (e) {
-                console.error(e);
+                console.error("Critical error in fetchSubscription:", e);
             }
             setIsLoading(false);
         }
