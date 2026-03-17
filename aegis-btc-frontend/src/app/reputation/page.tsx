@@ -22,27 +22,48 @@ export default function Reputation() {
                 setIsLoading(true);
                 try {
                     const userData = userSession.loadUserData();
-                    const address = userData.profile.stxAddress.mainnet || userData.profile.stxAddress.testnet;
+                    const profile = userData.profile as any;
+                    const address = profile?.stxAddress?.mainnet || profile?.stxAddress?.testnet || profile?.stxAddress || "";
+                    
+                    if (!address) {
+                        setIsLoading(false);
+                        return;
+                    }
 
-                    const stxRes = await fetchCallReadOnlyFunction({
-                        network: NETWORK,
-                        contractAddress: CONTRACT_ADDRESS,
-                        contractName: CONTRACT_NAME,
-                        functionName: 'get-stx-balance',
-                        functionArgs: [principalCV(address)],
-                        senderAddress: address
-                    });
-                    const stxVal = parseInt(cvToJSON(stxRes).value) / 1000000;
+                    let stxVal = 0;
+                    let sbtcVal = 0;
 
-                    const sbtcRes = await fetchCallReadOnlyFunction({
-                        network: NETWORK,
-                        contractAddress: CONTRACT_ADDRESS,
-                        contractName: CONTRACT_NAME,
-                        functionName: 'get-sbtc-balance',
-                        functionArgs: [principalCV(address)],
-                        senderAddress: address
-                    });
-                    const sbtcVal = parseInt(cvToJSON(sbtcRes).value) / 100000000;
+                    try {
+                        const stxRes = await fetchCallReadOnlyFunction({
+                            network: NETWORK,
+                            contractAddress: CONTRACT_ADDRESS,
+                            contractName: CONTRACT_NAME,
+                            functionName: 'get-stx-balance',
+                            functionArgs: [principalCV(address)],
+                            senderAddress: address
+                        });
+                        const resJson = cvToJSON(stxRes);
+                        const raw = resJson?.value?.value || resJson?.value || "0";
+                        stxVal = parseInt(String(raw)) / 1000000;
+                    } catch (e) {
+                         console.warn("Reputation: stx-balance fetch skipped", e);
+                    }
+
+                    try {
+                        const sbtcRes = await fetchCallReadOnlyFunction({
+                            network: NETWORK,
+                            contractAddress: CONTRACT_ADDRESS,
+                            contractName: CONTRACT_NAME,
+                            functionName: 'get-sbtc-balance',
+                            functionArgs: [principalCV(address)],
+                            senderAddress: address
+                        });
+                        const resJson = cvToJSON(sbtcRes);
+                        const raw = resJson?.value?.value || resJson?.value || "0";
+                        sbtcVal = parseInt(String(raw)) / 100000000;
+                    } catch (e) {
+                        console.warn("Reputation: sbtc-balance fetch skipped", e);
+                    }
 
                     // Base score 500 + pts for activity
                     let newScore = 500;
@@ -52,7 +73,7 @@ export default function Reputation() {
 
                     setScore(newScore);
                 } catch (e) {
-                    console.error(e);
+                    console.error("Critical error in reputation calculation:", e);
                 }
                 setIsLoading(false);
             }
