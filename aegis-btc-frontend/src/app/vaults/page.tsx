@@ -14,6 +14,8 @@ import { toast } from 'react-hot-toast';
 
 export default function Vaults() {
     const {
+        isConnected,
+        address,
         balances,
         isLoadingBalances,
         refreshBalances,
@@ -49,14 +51,12 @@ export default function Vaults() {
         // Convert input (STX) to standard micro-STX format to pass into Clarity
         const microStxAmount = Math.floor(Number(depositAmountStx) * 1000000);
 
-        if (!userSession.isUserSignedIn()) return;
-        const userData = userSession.loadUserData();
-        const address = userData.profile.stxAddress?.testnet || userData.profile.stxAddress?.mainnet || (typeof userData.profile.stxAddress === 'string' ? userData.profile.stxAddress : null);
-
-        if (!address) {
+        if (!isConnected || !address) {
             toast.error("Connect your wallet");
+            setIsDepositingStx(false);
             return;
         }
+
 
         openContractCall({
             network: stacksNetwork,
@@ -90,13 +90,7 @@ export default function Vaults() {
         }
 
         try {
-            const userData = userSession.loadUserData();
-            // Robust address retrieval for different wallet versions
-            const address = userData.profile.stxAddress?.mainnet ||
-                userData.profile.stxAddress?.testnet ||
-                (typeof userData.profile.stxAddress === 'string' ? userData.profile.stxAddress : null);
-
-            if (!address) {
+            if (!isConnected || !address) {
                 toast.error("Could not find Stacks address. Please re-sign in.");
                 return;
             }
