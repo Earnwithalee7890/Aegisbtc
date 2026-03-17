@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, Rea
 import { userSession } from "@/components/layout/Navbar";
 import { STACKS_MAINNET, STACKS_TESTNET } from "@stacks/network";
 import { fetchCallReadOnlyFunction, principalCV, cvToJSON } from "@stacks/transactions";
+import { toast } from "react-hot-toast";
 
 // ─── Contract Config ────────────────────────────────────────────────────────
 export const CONTRACT_ADDRESS = "SP2F500B8DTRK1EANJQ054BRAB8DDKN6QCMXGNFBT";
@@ -43,6 +44,7 @@ interface WalletContextValue {
   apiUrl: string;
   contractAddress: string;
   contractName: string;
+  isContractMissing: boolean;
 }
 
 const DEFAULT_BALANCES: WalletBalances = {
@@ -68,6 +70,7 @@ const WalletContext = createContext<WalletContextValue>({
   apiUrl: MAINNET_API,
   contractAddress: CONTRACT_ADDRESS,
   contractName: CONTRACT_NAME,
+  isContractMissing: false,
 });
 
 export function WalletProvider({ children }: { children: ReactNode }) {
@@ -291,28 +294,42 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
   }, [isConnected, address, network, refreshBalances]);
 
-  const setNetwork = (n: NetworkType) => {
-    setNetworkState(n);
-    localStorage.setItem("aegis_network", n);
-  };
+  // ─── Network Management ──────────────────────────────────────────────────
+  const setNetwork = useCallback((newNetwork: NetworkType) => {
+    setNetworkState(newNetwork);
+    localStorage.setItem("aegis_network", newNetwork);
+    
+    // If user switches to Mainnet, show a toast warning that this is a testnet demo
+    if (newNetwork === "Mainnet") {
+        toast("Note: Protocol features (Deposit/Borrow) are currently optimized for Testnet. Switching to Mainnet is for balance viewing only.", {
+            icon: '⚠️',
+            duration: 6000
+        });
+    }
+  }, []);
+
+  // ─── Verification ────────────────────────────────────────────────────────
+  // Simple check to see if the contract is likely deployed (STX balance check is a good proxy or just network check)
+  const isContractMissing = network === "Mainnet";
 
 
   return (
     <WalletContext.Provider
       value={{
         isConnected,
+        address,
         network,
         setNetwork,
-        address,
         mainnetAddress,
         testnetAddress,
         balances,
-        isLoadingBalances,
         refreshBalances,
+        isLoadingBalances,
         stacksNetwork,
         apiUrl,
         contractAddress,
         contractName,
+        isContractMissing,
       }}
     >
       {children}

@@ -16,6 +16,7 @@ export default function Borrow() {
         stacksNetwork,
         contractAddress: CONTRACT_ADDRESS,
         contractName: CONTRACT_NAME,
+        isContractMissing,
     } = useWallet();
 
     const walletSbtc  = balances.sbtc;
@@ -28,14 +29,25 @@ export default function Borrow() {
     const sBtcPrice = 65000;
     const stxPrice  = 2.5;
 
-    // Max Borrow based on ON-CHAIN deposits (80% LTV)
-    const maxBorrow = (Number(vaultSbtc) * sBtcPrice + Number(vaultStx) * stxPrice) * 0.8;
-
-
     const [isBorrowing, setIsBorrowing] = useState(false);
     const [isRepaying, setIsRepaying] = useState(false);
 
+    // Max Borrow based on ON-CHAIN deposits (80% LTV)
+    const maxBorrow = (Number(vaultSbtc) * sBtcPrice + Number(vaultStx) * stxPrice) * 0.8;
+
+    const handleContractCheck = () => {
+        if (isContractMissing) {
+            toast.error("Protocol not deployed on Mainnet. Please switch to Testnet in the Navbar to use Borrow/Repay.", {
+                duration: 6000,
+                icon: '⚠️'
+            });
+            return true;
+        }
+        return false;
+    };
+
     const handleBorrow = async () => {
+        if (handleContractCheck()) return;
         if (!borrowAmount || isNaN(Number(borrowAmount))) return;
         setIsBorrowing(true);
         const microUsdcxAmount = Math.floor(Number(borrowAmount) * 1000000);
@@ -58,6 +70,7 @@ export default function Borrow() {
     };
 
     const handleRepay = async () => {
+        if (handleContractCheck()) return;
         if (!repayAmount || isNaN(Number(repayAmount))) return;
         setIsRepaying(true);
         const microUsdcxAmount = Math.floor(Number(repayAmount) * 1000000);

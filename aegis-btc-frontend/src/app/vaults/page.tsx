@@ -22,6 +22,7 @@ export default function Vaults() {
         stacksNetwork,
         contractAddress: CONTRACT_ADDRESS,
         contractName: CONTRACT_NAME,
+        isContractMissing,
     } = useWallet();
 
     const [depositAmountStx, setDepositAmountStx] = useState("");
@@ -44,11 +45,22 @@ export default function Vaults() {
     const vaultSbtc   = balances.vaultSbtc;
     const isLoadingBalance = isLoadingBalances;
 
+    const handleContractCheck = () => {
+        if (isContractMissing) {
+            toast.error("Protocol not deployed on Mainnet. Please switch to Testnet in the Navbar to use Vaults.", {
+                duration: 6000,
+                icon: '⚠️'
+            });
+            return true;
+        }
+        return false;
+    };
+
     const handleDepositStx = async () => {
+        if (handleContractCheck()) return;
         if (!depositAmountStx || isNaN(Number(depositAmountStx))) return;
         setIsDepositingStx(true);
 
-        // Convert input (STX) to standard micro-STX format to pass into Clarity
         const microStxAmount = Math.floor(Number(depositAmountStx) * 1000000);
 
         if (!isConnected || !address) {
@@ -57,18 +69,13 @@ export default function Vaults() {
             return;
         }
 
-
         openContractCall({
             network: stacksNetwork,
             contractAddress: CONTRACT_ADDRESS,
             contractName: CONTRACT_NAME,
             functionName: 'deposit-stx',
             functionArgs: [uintCV(microStxAmount)],
-            postConditionMode: PostConditionMode.Allow,
-            appDetails: {
-                name: 'AegisBTC Real Vaults',
-                icon: window.location.origin + '/favicon.ico',
-            },
+            appDetails: { name: 'AegisBTC Real Vaults', icon: window.location.origin + '/favicon.ico' },
             onFinish: data => {
                 toast.success(`STX Deposit Broadcasted! TxID: ${data.txId.substring(0, 10)}...`, { duration: 5000, icon: '🚀' });
                 setIsDepositingStx(false);
@@ -80,12 +87,9 @@ export default function Vaults() {
     };
 
     const handleDepositSbtc = async () => {
+        if (handleContractCheck()) return;
         if (!depositAmountSbtc || isNaN(Number(depositAmountSbtc))) {
             toast.error("Please enter a valid amount");
-            return;
-        }
-        if (!userSession.isUserSignedIn()) {
-            toast.error("Please connect your wallet first");
             return;
         }
 
@@ -98,15 +102,12 @@ export default function Vaults() {
             setIsDepositingSbtc(true);
             const microSbtcAmount = Math.floor(Number(depositAmountSbtc) * 100000000);
 
-            console.log("Initiating sBTC deposit:", { address, amount: microSbtcAmount });
-
             openContractCall({
                 network: stacksNetwork,
                 contractAddress: CONTRACT_ADDRESS,
                 contractName: CONTRACT_NAME,
                 functionName: 'deposit-sbtc',
                 functionArgs: [uintCV(microSbtcAmount)],
-                postConditionMode: PostConditionMode.Allow,
                 appDetails: { name: 'AegisBTC Real Vaults', icon: window.location.origin + '/favicon.ico' },
                 onFinish: () => {
                     toast.success(`sBTC Deposit Broadcasted!`, { icon: '🧡' });
@@ -124,6 +125,7 @@ export default function Vaults() {
     };
 
     const handleFaucet = async () => {
+        if (handleContractCheck()) return;
         setIsMinting(true);
         openContractCall({
             network: stacksNetwork,
