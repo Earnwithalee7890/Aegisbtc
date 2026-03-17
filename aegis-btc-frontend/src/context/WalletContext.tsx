@@ -148,9 +148,13 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       const ftRes = await fetch(`${currentApiUrl}/extended/v1/address/${currentAddress}/balances`);
       const ftData = ftRes.ok ? await ftRes.json() : { fungible_tokens: {} };
 
-      // STX balance parsing (Hiro v2 returns balance as string)
-      const stxMicro = stxData?.balance || ftData?.stx?.balance || "0";
-      const stxVal = (Number(stxMicro) / 1_000_000).toFixed(2);
+      // STX balance parsing (Hiro v2 returns balance as string, v1 as number/string)
+      const stxRaw = stxData?.balance || ftData?.stx?.balance || "0";
+      console.log(`[WalletContext] Raw STX from API:`, stxRaw);
+      
+      const stxMicro = typeof stxRaw === "string" ? parseInt(stxRaw) : stxRaw;
+      const stxVal = (stxMicro / 1_000_000).toFixed(2);
+
 
       // Token asset identifiers
       const sbtcAssetId  = `${currentContract}.${currentContractName}::mock-sbtc`;
@@ -223,6 +227,12 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   // ─── Init on mount ────────────────────────────────────────────────────────
   useEffect(() => {
+    // Load network preference from localStorage
+    const savedNetwork = localStorage.getItem("aegis_network") as NetworkType;
+    if (savedNetwork && (savedNetwork === "Mainnet" || savedNetwork === "Testnet")) {
+      setNetworkState(savedNetwork);
+    }
+
     // Handle redirect back after Leather sign-in
     if (userSession.isSignInPending()) {
       userSession.handlePendingSignIn().then(() => {
@@ -253,7 +263,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   const setNetwork = (n: NetworkType) => {
     setNetworkState(n);
+    localStorage.setItem("aegis_network", n);
   };
+
 
   return (
     <WalletContext.Provider
