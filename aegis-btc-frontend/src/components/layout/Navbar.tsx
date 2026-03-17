@@ -3,24 +3,22 @@
 import Link from "next/link";
 import Image from "next/image";
 import logo from "@/app/logo.png";
-import { Wallet, ChevronDown, Activity, LogOut, Menu, X, Rocket } from "lucide-react";
+import { Wallet, ChevronDown, Activity, LogOut, Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 
 import { AppConfig, UserSession, authenticate } from '@stacks/connect';
-
+import { useWallet } from "@/context/WalletContext";
 import { usePathname } from "next/navigation";
 
-// Initialize Stacks Session
+// Initialize Stacks Session (exported so pages can call userSession.isUserSignedIn())
 const appConfig = new AppConfig(['store_write', 'publish_data']);
 export const userSession = new UserSession({ appConfig });
 
 export default function Navbar() {
     const pathname = usePathname();
-    const [isConnected, setIsConnected] = useState(false);
-    const [network, setNetwork] = useState("Testnet");
+    const { isConnected, network, setNetwork, address, refreshBalances } = useWallet();
     const [isNetworkDropdownOpen, setIsNetworkDropdownOpen] = useState(false);
-    const [userAddress, setUserAddress] = useState("");
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     // Navigation Links Config
@@ -36,26 +34,6 @@ export default function Navbar() {
         { name: "Quests", href: "/tasks", special: true },
     ];
 
-    // Read session on load
-    useEffect(() => {
-        if (userSession.isSignInPending()) {
-            userSession.handlePendingSignIn().then((userData: any) => {
-                setIsConnected(true);
-                const address = (network === "Mainnet"
-                    ? userData.profile.stxAddress.mainnet || userData.profile.stxAddress
-                    : userData.profile.stxAddress.testnet || userData.profile.stxAddress);
-                setUserAddress(typeof address === 'string' ? address : "");
-            });
-        } else if (userSession.isUserSignedIn()) {
-            setIsConnected(true);
-            const userData = userSession.loadUserData();
-            const address = (network === "Mainnet"
-                ? userData.profile.stxAddress.mainnet || userData.profile.stxAddress
-                : userData.profile.stxAddress.testnet || userData.profile.stxAddress);
-            setUserAddress(typeof address === 'string' ? address : "");
-        }
-    }, [network]);
-
     const connectWallet = () => {
         authenticate({
             appDetails: {
@@ -63,12 +41,8 @@ export default function Navbar() {
                 icon: window.location.origin + '/favicon.ico',
             },
             onFinish: () => {
-                setIsConnected(true);
-                const userData = userSession.loadUserData();
-                const address = (network === "Mainnet"
-                    ? userData.profile.stxAddress.mainnet || userData.profile.stxAddress
-                    : userData.profile.stxAddress.testnet || userData.profile.stxAddress);
-                setUserAddress(typeof address === 'string' ? address : "");
+                // Trigger a page reload so WalletContext picks up the new session
+                window.location.reload();
             },
             userSession,
         }).catch((e) => {
@@ -78,13 +52,17 @@ export default function Navbar() {
 
     const handleDisconnect = () => {
         userSession.signUserOut();
-        setIsConnected(false);
-        setUserAddress("");
+        window.location.reload();
     };
 
-    const truncateAddress = (address: string) => {
-        if (!address) return "";
-        return `${address.substring(0, 4)}...${address.substring(address.length - 4)}`;
+    const handleNetworkSwitch = (n: "Mainnet" | "Testnet") => {
+        setNetwork(n);
+        setIsNetworkDropdownOpen(false);
+    };
+
+    const truncateAddress = (addr: string) => {
+        if (!addr) return "";
+        return `${addr.substring(0, 4)}...${addr.substring(addr.length - 4)}`;
     };
 
     return (
@@ -186,7 +164,7 @@ export default function Navbar() {
                                                 className="absolute right-0 mt-2 w-48 rounded-xl bg-surface-900 border border-white/10 shadow-xl overflow-hidden z-50"
                                             >
                                                 <button
-                                                    onClick={() => { setNetwork("Mainnet"); setIsNetworkDropdownOpen(false); }}
+                                                    onClick={() => handleNetworkSwitch("Mainnet")}
                                                     className={`w-full text-left px-4 py-3 flex items-center justify-between text-sm transition-colors ${network === "Mainnet" ? "bg-white/5 text-white font-medium" : "text-surface-400 hover:bg-white/5 hover:text-white"}`}
                                                 >
                                                     <div className="flex items-center gap-2">
@@ -195,7 +173,7 @@ export default function Navbar() {
                                                     </div>
                                                 </button>
                                                 <button
-                                                    onClick={() => { setNetwork("Testnet"); setIsNetworkDropdownOpen(false); }}
+                                                    onClick={() => handleNetworkSwitch("Testnet")}
                                                     className={`w-full text-left px-4 py-3 flex items-center justify-between text-sm transition-colors ${network === "Testnet" ? "bg-white/5 text-white font-medium border-t border-white/5" : "text-surface-400 hover:bg-white/5 hover:text-white border-t border-white/5"}`}
                                                 >
                                                     <div className="flex items-center gap-2">
@@ -212,7 +190,7 @@ export default function Navbar() {
                                 <div className="flex items-center gap-2 bg-gradient-to-r from-primary-500/10 to-accent-500/10 border border-primary-500/20 py-2 pl-4 pr-2 rounded-xl shadow-[0_0_15px_rgba(249,115,22,0.15)] group">
                                     <Wallet className="w-4 h-4 text-primary-400" />
                                     <span className="text-sm font-mono text-white font-medium pr-2 border-r border-white/10">
-                                        {userAddress ? truncateAddress(userAddress) : "Connecting..."}
+                                        {address ? truncateAddress(address) : "Connecting..."}
                                     </span>
                                     <button
                                         onClick={handleDisconnect}

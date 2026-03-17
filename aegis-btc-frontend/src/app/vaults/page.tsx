@@ -1,98 +1,47 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { userSession } from "@/components/layout/Navbar";
+import { useWallet } from "@/context/WalletContext";
 import { motion } from "framer-motion";
 import { Vault, ArrowUpRight, ArrowDownRight, Activity, Zap, Sparkles, Calculator } from "lucide-react";
 import { openContractCall } from '@stacks/connect';
-import { STACKS_MAINNET } from '@stacks/network';
 import {
     uintCV,
-    principalCV,
-    FungibleConditionCode,
     PostConditionMode,
-    fetchCallReadOnlyFunction,
-    cvToJSON
 } from '@stacks/transactions';
 import { toast } from 'react-hot-toast';
 
-// CONSTANT = Replace this with your actual contract deployment address from Clarinet or Leather!
-const CONTRACT_ADDRESS = "SP2F500B8DTRK1EANJQ054BRAB8DDKN6QCMXGNFBT";
-const CONTRACT_NAME = "aegis-unified-protocol";
-const NETWORK = STACKS_MAINNET;
-const API_URL = "https://api.mainnet.hiro.so";
-
 export default function Vaults() {
+    const {
+        balances,
+        isLoadingBalances,
+        refreshBalances,
+        stacksNetwork,
+        contractAddress: CONTRACT_ADDRESS,
+        contractName: CONTRACT_NAME,
+    } = useWallet();
+
     const [depositAmountStx, setDepositAmountStx] = useState("");
     const [depositAmountSbtc, setDepositAmountSbtc] = useState("");
-    const [walletStx, setWalletStx] = useState("0");
-    const [walletSbtc, setWalletSbtc] = useState("0");
-    const [isLoadingBalance, setIsLoadingBalance] = useState(false);
     const [isDepositingStx, setIsDepositingStx] = useState(false);
     const [isDepositingSbtc, setIsDepositingSbtc] = useState(false);
     const [isMinting, setIsMinting] = useState(false);
-    const [vaultStx, setVaultStx] = useState("0");
-    const [vaultSbtc, setVaultSbtc] = useState("0");
+    const [isWithdrawingStx, setIsWithdrawingStx] = useState(false);
+    const [isWithdrawingSbtc, setIsWithdrawingSbtc] = useState(false);
     const [calcAmount, setCalcAmount] = useState("");
 
     const avgApy = 0.084;
     const estDaily = (parseFloat(calcAmount) || 0) * (avgApy / 365);
     const estYearly = (parseFloat(calcAmount) || 0) * avgApy;
 
-    // Fetch Real Balance
-    useEffect(() => {
-        const getBalance = async () => {
-            if (userSession.isUserSignedIn()) {
-                setIsLoadingBalance(true);
-                try {
-                    const userData = userSession.loadUserData();
-                    const address = userData.profile.stxAddress.mainnet || userData.profile.stxAddress.testnet;
+    // Convenience aliases from shared balances
+    const walletStx   = balances.stx;
+    const walletSbtc  = balances.sbtc;
+    const vaultStx    = balances.vaultStx;
+    const vaultSbtc   = balances.vaultSbtc;
+    const isLoadingBalance = isLoadingBalances;
 
-                    // Direct Hiro API fetch for STX balance
-                    const res = await fetch(`${API_URL}/extended/v1/address/${address}/balances`);
-                    const data = await res.json();
-
-                    // Convert STX micro-stacks to full strings (1 STX = 1,000,000 micro-STX)
-                    const stxBalance = (parseInt(data?.stx?.balance || "0") / 1000000).toFixed(2);
-                    setWalletStx(stxBalance);
-
-                    // Fetch Fungible Token balances (for our custom aegis-sbtc)
-                    const ftAssetId = `${CONTRACT_ADDRESS}.${CONTRACT_NAME}::aegis-sbtc`;
-                    const sbtcData = data?.fungible_tokens?.[ftAssetId];
-                    const sbtcBalance = (parseInt(sbtcData?.balance || "0") / 100000000).toFixed(4);
-                    setWalletSbtc(sbtcBalance);
-
-                    // Fetch ON-CHAIN Vault Balances
-                    const stxVaultRes = await fetchCallReadOnlyFunction({
-                        network: NETWORK,
-                        contractAddress: CONTRACT_ADDRESS,
-                        contractName: CONTRACT_NAME,
-                        functionName: 'get-stx-balance',
-                        functionArgs: [principalCV(address)],
-                        senderAddress: address
-                    });
-                    setVaultStx((parseInt(cvToJSON(stxVaultRes).value) / 1000000).toFixed(2));
-
-                    const sbtcVaultRes = await fetchCallReadOnlyFunction({
-                        network: NETWORK,
-                        contractAddress: CONTRACT_ADDRESS,
-                        contractName: CONTRACT_NAME,
-                        functionName: 'get-sbtc-balance',
-                        functionArgs: [principalCV(address)],
-                        senderAddress: address
-                    });
-                    setVaultSbtc((parseInt(cvToJSON(sbtcVaultRes).value) / 100000000).toFixed(4));
-
-                } catch (e) {
-                    console.error("Failed to fetch balance:", e);
-                    setWalletStx("0.00");
-                    setWalletSbtc("0.00");
-                }
-                setIsLoadingBalance(false);
-            }
-        };
-        getBalance();
-    }, []);
     const handleDepositStx = async () => {
         if (!depositAmountStx || isNaN(Number(depositAmountStx))) return;
         setIsDepositingStx(true);
@@ -110,7 +59,7 @@ export default function Vaults() {
         }
 
         openContractCall({
-            network: NETWORK,
+            network: stacksNetwork,
             contractAddress: CONTRACT_ADDRESS,
             contractName: CONTRACT_NAME,
             functionName: 'deposit-stx',
@@ -121,17 +70,12 @@ export default function Vaults() {
                 icon: window.location.origin + '/favicon.ico',
             },
             onFinish: data => {
-                console.log("Real STX transaction broadcasted!", data.txId);
-                toast.success(`STX Deposit Broadcasted! \nTxID: ${data.txId.substring(0, 10)}...`, {
-                    duration: 5000,
-                    icon: '🚀'
-                });
+                toast.success(`STX Deposit Broadcasted! TxID: ${data.txId.substring(0, 10)}...`, { duration: 5000, icon: '🚀' });
                 setIsDepositingStx(false);
                 setDepositAmountStx("");
+                setTimeout(() => refreshBalances(), 4000);
             },
-            onCancel: () => {
-                setIsDepositingStx(false);
-            }
+            onCancel: () => { setIsDepositingStx(false); }
         });
     };
 
@@ -163,24 +107,20 @@ export default function Vaults() {
             console.log("Initiating sBTC deposit:", { address, amount: microSbtcAmount });
 
             openContractCall({
-                network: NETWORK,
+                network: stacksNetwork,
                 contractAddress: CONTRACT_ADDRESS,
                 contractName: CONTRACT_NAME,
                 functionName: 'deposit-sbtc',
                 functionArgs: [uintCV(microSbtcAmount)],
                 postConditionMode: PostConditionMode.Allow,
-                appDetails: {
-                    name: 'AegisBTC Real Vaults',
-                    icon: window.location.origin + '/favicon.ico',
-                },
-                onFinish: data => {
+                appDetails: { name: 'AegisBTC Real Vaults', icon: window.location.origin + '/favicon.ico' },
+                onFinish: () => {
                     toast.success(`sBTC Deposit Broadcasted!`, { icon: '🧡' });
                     setIsDepositingSbtc(false);
                     setDepositAmountSbtc("");
+                    setTimeout(() => refreshBalances(), 4000);
                 },
-                onCancel: () => {
-                    setIsDepositingSbtc(false);
-                }
+                onCancel: () => { setIsDepositingSbtc(false); }
             });
         } catch (error: any) {
             console.error("sBTC Deposit Error:", error);
@@ -192,49 +132,33 @@ export default function Vaults() {
     const handleFaucet = async () => {
         setIsMinting(true);
         openContractCall({
-            network: NETWORK,
+            network: stacksNetwork,
             contractAddress: CONTRACT_ADDRESS,
             contractName: CONTRACT_NAME,
             functionName: 'faucet-mock-sbtc',
             functionArgs: [],
-            appDetails: {
-                name: 'AegisBTC Faucet',
-                icon: window.location.origin + '/favicon.ico',
-            },
+            appDetails: { name: 'AegisBTC Faucet', icon: window.location.origin + '/favicon.ico' },
             onFinish: data => {
-                console.log("Faucet transaction broadcasted!", data.txId);
-                toast.success(`Faucet Broadcasted! 1000 Aegis sBTC incoming.`, {
-                    duration: 6000,
-                    icon: '🎁'
-                });
+                toast.success(`Faucet Broadcasted! 1000 Aegis sBTC incoming.`, { duration: 6000, icon: '🎁' });
                 setIsMinting(false);
+                setTimeout(() => refreshBalances(), 4000);
             },
-            onCancel: () => {
-                setIsMinting(false);
-            }
+            onCancel: () => { setIsMinting(false); }
         });
     };
-
-    const [isWithdrawingStx, setIsWithdrawingStx] = useState(false);
-    const [isWithdrawingSbtc, setIsWithdrawingSbtc] = useState(false);
 
     const handleWithdrawStx = async () => {
         if (!depositAmountStx || isNaN(Number(depositAmountStx))) return;
         setIsWithdrawingStx(true);
         const microStxAmount = Math.floor(Number(depositAmountStx) * 1000000);
-
         openContractCall({
-            network: NETWORK,
+            network: stacksNetwork,
             contractAddress: CONTRACT_ADDRESS,
             contractName: CONTRACT_NAME,
             functionName: 'withdraw-stx',
             functionArgs: [uintCV(microStxAmount)],
             appDetails: { name: 'AegisBTC Real Vaults', icon: window.location.origin + '/favicon.ico' },
-            onFinish: data => {
-                toast.success(`STX Withdrawal Broadcasted!`, { icon: '💸' });
-                setIsWithdrawingStx(false);
-                setDepositAmountStx("");
-            },
+            onFinish: () => { toast.success(`STX Withdrawal Broadcasted!`, { icon: '💸' }); setIsWithdrawingStx(false); setDepositAmountStx(""); setTimeout(() => refreshBalances(), 4000); },
             onCancel: () => setIsWithdrawingStx(false)
         });
     };
@@ -243,19 +167,14 @@ export default function Vaults() {
         if (!depositAmountSbtc || isNaN(Number(depositAmountSbtc))) return;
         setIsWithdrawingSbtc(true);
         const microSbtcAmount = Math.floor(Number(depositAmountSbtc) * 100000000);
-
         openContractCall({
-            network: NETWORK,
+            network: stacksNetwork,
             contractAddress: CONTRACT_ADDRESS,
             contractName: CONTRACT_NAME,
             functionName: 'withdraw-sbtc',
             functionArgs: [uintCV(microSbtcAmount)],
             appDetails: { name: 'AegisBTC Real Vaults', icon: window.location.origin + '/favicon.ico' },
-            onFinish: data => {
-                toast.success(`sBTC Withdrawal Broadcasted!`, { icon: '💸' });
-                setIsWithdrawingSbtc(false);
-                setDepositAmountSbtc("");
-            },
+            onFinish: () => { toast.success(`sBTC Withdrawal Broadcasted!`, { icon: '💸' }); setIsWithdrawingSbtc(false); setDepositAmountSbtc(""); setTimeout(() => refreshBalances(), 4000); },
             onCancel: () => setIsWithdrawingSbtc(false)
         });
     };

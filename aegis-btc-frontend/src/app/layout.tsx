@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Toaster } from 'react-hot-toast';
+import { WalletProvider } from "@/context/WalletContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -48,11 +49,13 @@ export default function RootLayout({
           }}
         />
 
+      <WalletProvider>
         <Navbar />
         <main className="relative z-10 pt-24 pb-16 min-h-screen flex-grow">
           {children}
         </main>
         <Footer />
+      </WalletProvider>
       </body>
     </html>
   );

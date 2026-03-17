@@ -1,88 +1,36 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { HandCoins, ArrowDownUp, ShieldCheck, Zap, Activity } from "lucide-react";
-import { userSession } from "@/components/layout/Navbar";
+import { useWallet } from "@/context/WalletContext";
 import { openContractCall } from '@stacks/connect';
-import { STACKS_MAINNET } from '@stacks/network';
-import {
-    uintCV,
-    principalCV,
-    FungibleConditionCode,
-    PostConditionMode,
-    fetchCallReadOnlyFunction,
-    cvToJSON
-} from '@stacks/transactions';
+import { uintCV, PostConditionMode } from '@stacks/transactions';
 import { toast } from 'react-hot-toast';
 
-const CONTRACT_ADDRESS = "SP2F500B8DTRK1EANJQ054BRAB8DDKN6QCMXGNFBT";
-const CONTRACT_NAME = "aegis-unified-protocol";
-const NETWORK = STACKS_MAINNET;
-const API_URL = "https://api.mainnet.hiro.so";
-
 export default function Borrow() {
-    const [walletSbtc, setWalletSbtc] = useState("0");
-    const [walletUsdcx, setWalletUsdcx] = useState("0");
-    const [vaultSbtc, setVaultSbtc] = useState("0");
-    const [vaultStx, setVaultStx] = useState("0");
-    const [isLoadingBalance, setIsLoadingBalance] = useState(false);
+    const {
+        balances,
+        isLoadingBalances,
+        refreshBalances,
+        stacksNetwork,
+        contractAddress: CONTRACT_ADDRESS,
+        contractName: CONTRACT_NAME,
+    } = useWallet();
+
+    const walletSbtc  = balances.sbtc;
+    const walletUsdcx = balances.usdcx;
+    const vaultSbtc   = balances.vaultSbtc;
+    const vaultStx    = balances.vaultStx;
 
     const [borrowAmount, setBorrowAmount] = useState("");
-    const [repayAmount, setRepayAmount] = useState("");
+    const [repayAmount, setRepayAmount]   = useState("");
     const sBtcPrice = 65000;
-    const stxPrice = 2.5;
+    const stxPrice  = 2.5;
 
-    // Max Borrow based on ON-CHAIN deposits
+    // Max Borrow based on ON-CHAIN deposits (80% LTV)
     const maxBorrow = (Number(vaultSbtc) * sBtcPrice + Number(vaultStx) * stxPrice) * 0.8;
 
-    useEffect(() => {
-        const getBalances = async () => {
-            if (userSession.isUserSignedIn()) {
-                setIsLoadingBalance(true);
-                try {
-                    const userData = userSession.loadUserData();
-                    const address = userData.profile.stxAddress.mainnet || userData.profile.stxAddress.testnet;
-
-                    // 1. Fetch Wallet Balances (Hiro API)
-                    const res = await fetch(`${API_URL}/extended/v1/address/${address}/balances`);
-                    const data = await res.json();
-
-                    const sbtcData = data?.fungible_tokens?.[`${CONTRACT_ADDRESS}.${CONTRACT_NAME}::aegis-sbtc`];
-                    setWalletSbtc((parseInt(sbtcData?.balance || "0") / 100000000).toFixed(4));
-
-                    const usdcxData = data?.fungible_tokens?.[`${CONTRACT_ADDRESS}.${CONTRACT_NAME}::aegis-usdcx`];
-                    setWalletUsdcx((parseInt(usdcxData?.balance || "0") / 1000000).toFixed(2));
-
-                    // 2. Fetch On-Chain Vault Deposits (Collateral)
-                    const stxVaultRes = await fetchCallReadOnlyFunction({
-                        network: NETWORK,
-                        contractAddress: CONTRACT_ADDRESS,
-                        contractName: CONTRACT_NAME,
-                        functionName: 'get-stx-balance',
-                        functionArgs: [principalCV(address)],
-                        senderAddress: address
-                    });
-                    setVaultStx((parseInt(cvToJSON(stxVaultRes).value) / 1000000).toFixed(2));
-
-                    const sbtcVaultRes = await fetchCallReadOnlyFunction({
-                        network: NETWORK,
-                        contractAddress: CONTRACT_ADDRESS,
-                        contractName: CONTRACT_NAME,
-                        functionName: 'get-sbtc-balance',
-                        functionArgs: [principalCV(address)],
-                        senderAddress: address
-                    });
-                    setVaultSbtc((parseInt(cvToJSON(sbtcVaultRes).value) / 100000000).toFixed(4));
-
-                } catch (e) {
-                    console.error("Failed to fetch balances:", e);
-                }
-                setIsLoadingBalance(false);
-            }
-        };
-        getBalances();
-    }, []);
 
     const [isBorrowing, setIsBorrowing] = useState(false);
     const [isRepaying, setIsRepaying] = useState(false);
@@ -93,16 +41,17 @@ export default function Borrow() {
         const microUsdcxAmount = Math.floor(Number(borrowAmount) * 1000000);
 
         openContractCall({
-            network: NETWORK,
+            network: stacksNetwork,
             contractAddress: CONTRACT_ADDRESS,
             contractName: CONTRACT_NAME,
             functionName: 'borrow-usdcx',
             functionArgs: [uintCV(microUsdcxAmount)],
             appDetails: { name: 'AegisBTC Real Borrow', icon: window.location.origin + '/favicon.ico' },
-            onFinish: data => {
+            onFinish: () => {
                 toast.success(`USDCx Borrow Broadcasted!`, { icon: '💰' });
                 setIsBorrowing(false);
                 setBorrowAmount("");
+                setTimeout(() => refreshBalances(), 4000);
             },
             onCancel: () => setIsBorrowing(false)
         });
@@ -113,29 +62,19 @@ export default function Borrow() {
         setIsRepaying(true);
         const microUsdcxAmount = Math.floor(Number(repayAmount) * 1000000);
 
-        if (!userSession.isUserSignedIn()) return;
-        const userData = userSession.loadUserData();
-        const address = userData.profile.stxAddress?.mainnet ||
-            userData.profile.stxAddress?.testnet ||
-            (typeof userData.profile.stxAddress === 'string' ? userData.profile.stxAddress : null);
-
-        if (!address) {
-            toast.error("Connect your wallet");
-            return;
-        }
-
         openContractCall({
-            network: NETWORK,
+            network: stacksNetwork,
             contractAddress: CONTRACT_ADDRESS,
             contractName: CONTRACT_NAME,
             functionName: 'repay-usdcx',
             functionArgs: [uintCV(microUsdcxAmount)],
             postConditionMode: PostConditionMode.Allow,
             appDetails: { name: 'AegisBTC Real Borrow', icon: window.location.origin + '/favicon.ico' },
-            onFinish: data => {
+            onFinish: () => {
                 toast.success(`Repayment Broadcasted!`, { icon: '🤝' });
                 setIsRepaying(false);
                 setRepayAmount("");
+                setTimeout(() => refreshBalances(), 4000);
             },
             onCancel: () => setIsRepaying(false)
         });
