@@ -121,12 +121,14 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       setMainnetAddress(mnAddr);
       setTestnetAddress(tnAddr);
       setIsConnected(true);
+      console.log("[WalletContext] Session data:", userDataAny);
       console.log("[WalletContext] Addresses loaded:", { mainnet: mnAddr, testnet: tnAddr });
     } else {
       setIsConnected(false);
       setMainnetAddress("");
       setTestnetAddress("");
     }
+
   }, []);
 
   // ─── Fetch balances ───────────────────────────────────────────────────────
@@ -176,6 +178,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
 
       // 2. Fetch on-chain vault deposits via read-only calls
+      // ISOLATED to prevent contract errors from zeroing out the whole wallet balance
       let vaultStxVal   = "0.00";
       let vaultSbtcVal  = "0.00000000";
       let usdcxDebtVal  = "0.00";
@@ -189,8 +192,13 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           functionArgs: [principalCV(currentAddress)],
           senderAddress: currentAddress,
         });
-        vaultStxVal = (parseInt(cvToJSON(stxVaultRes).value ?? "0") / 1e6).toFixed(2);
-      } catch { /* contract may not be live on testnet */ }
+        const resJson = cvToJSON(stxVaultRes);
+        // Robust value extraction for different return types
+        const rawVal = resJson?.value?.value || resJson?.value || "0";
+        vaultStxVal = (parseInt(String(rawVal)) / 1e6).toFixed(2);
+      } catch (e) { 
+        console.warn("[WalletContext] Vault STX fetch skipped (contract not found or function missing)");
+      }
 
       try {
         const sbtcVaultRes = await fetchCallReadOnlyFunction({
@@ -201,8 +209,12 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           functionArgs: [principalCV(currentAddress)],
           senderAddress: currentAddress,
         });
-        vaultSbtcVal = (parseInt(cvToJSON(sbtcVaultRes).value ?? "0") / 1e8).toFixed(8);
-      } catch { /* contract may not be live on testnet */ }
+        const resJson = cvToJSON(sbtcVaultRes);
+        const rawVal = resJson?.value?.value || resJson?.value || "0";
+        vaultSbtcVal = (parseInt(String(rawVal)) / 1e8).toFixed(8);
+      } catch (e) {
+        console.warn("[WalletContext] Vault sBTC fetch skipped");
+      }
 
       try {
         const debtRes = await fetchCallReadOnlyFunction({
@@ -213,8 +225,12 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           functionArgs: [principalCV(currentAddress)],
           senderAddress: currentAddress,
         });
-        usdcxDebtVal = (parseInt(cvToJSON(debtRes).value ?? "0") / 1e6).toFixed(2);
-      } catch { /* contract may not be live on testnet */ }
+        const resJson = cvToJSON(debtRes);
+        const rawVal = resJson?.value?.value || resJson?.value || "0";
+        usdcxDebtVal = (parseInt(String(rawVal)) / 1e6).toFixed(2);
+      } catch (e) {
+        console.warn("[WalletContext] Debt fetch skipped");
+      }
 
       setBalances({
         stx:       stxVal,
@@ -226,9 +242,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       });
 
     } catch (err) {
-      console.error("[WalletContext] Failed to fetch balances:", err);
-      setBalances(DEFAULT_BALANCES);
+      console.error("[WalletContext] Critical error in refreshBalances:", err);
+      // Even if contract fetch fails, we keep the wallet balances we already fetched.
+      // unless wallet fetch itself failed.
     } finally {
+
       setIsLoadingBalances(false);
     }
   }, [network, mainnetAddress, testnetAddress, isConnected]);

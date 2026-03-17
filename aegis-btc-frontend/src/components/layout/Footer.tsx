@@ -11,18 +11,7 @@ export default function Footer() {
     const [selectedDevItem, setSelectedDevItem] = useState<{ title: string, data: any } | null>(null);
 
     useEffect(() => {
-        const fetchStatus = async () => {
-            try {
-                const res = await fetch("http://localhost:8000/api/developers/status");
-                if (res.ok) {
-                    const data = await res.json();
-                    setDevStatus(data);
-                }
-            } catch (e) {
-                console.error("Failed to fetch dev status", e);
-            }
-        };
-        fetchStatus();
+        // Dev status fetch disabled since it was pointing to localhost:8000
     }, []);
 
     return (
