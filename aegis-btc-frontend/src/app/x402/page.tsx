@@ -15,25 +15,17 @@ export default function X402Page() {
 
     useEffect(() => {
         setLoading(true);
-        fetch("http://localhost:8000/api/x402/modules")
-            .then(res => res.json())
-            .then(data => {
-                setData(data);
-                setLoading(false);
-            })
-            .catch(err => {
-                console.warn("Backend not reachable, using fallback x402 modules");
-                setData({
-                    description: "Next-gen authentication and verifiable compute standard on Stacks.",
-                    standard_version: "v1.0-RC",
-                    modules: [
-                        { name: "Basic Token Standards", reward: 100 },
-                        { name: "ZK State Verification", reward: 250 },
-                        { name: "x402 Full Integration", reward: 500 }
-                    ]
-                });
-                setLoading(false);
-            });
+        // Backend disabled, using high-quality fallback data
+        setData({
+            description: "Next-gen authentication and verifiable compute standard on Stacks.",
+            standard_version: "v1.0-RC",
+            modules: [
+                { name: "Basic Token Standards", reward: 100 },
+                { name: "ZK State Verification", reward: 250 },
+                { name: "x402 Full Integration", reward: 500 }
+            ]
+        });
+        setLoading(false);
     }, []);
 
     const handleStartModule = (index: number) => {

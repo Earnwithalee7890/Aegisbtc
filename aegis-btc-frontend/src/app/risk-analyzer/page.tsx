@@ -43,22 +43,7 @@ export default function RiskAnalyzer() {
         await new Promise(resolve => setTimeout(resolve, 2000));
 
         try {
-            // In production, this points to our FastAPI backend
-            const response = await fetch("http://localhost:8000/api/analyze", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ contract_code: code, amount_at_risk_sbtc: 10 })
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setResult(data);
-                saveToHistory(data, code);
-            } else {
-                // Fallback mock response if backend isn't running
-                throw new Error("Backend not reachable");
-            }
-        } catch (error) {
+            // Simulated AI scanning without local backend noise
             console.log("Mocking response as backend is not connected");
             const lowerCode = code.toLowerCase();
             let score = 95;
@@ -72,16 +57,19 @@ export default function RiskAnalyzer() {
                 score -= 10;
                 vulns.push("Use of `unwrap-panic` detected. This could cause the contract to abort unexpectedly.");
             }
-            if (score > 85) {
-                const mockData = { risk_score: score, summary: "Contract appears generally safe.", vulnerability_details: vulns };
-                setResult(mockData);
-                saveToHistory(mockData, code);
-            } else {
-                const mockData = { risk_score: score, summary: "High risk! Critical vulnerabilities detected.", vulnerability_details: vulns };
-                setResult(mockData);
-                saveToHistory(mockData, code);
-            }
+            
+            const mockData = { 
+                risk_score: score, 
+                summary: score > 85 ? "Contract appears generally safe." : "High risk! Critical vulnerabilities detected.", 
+                vulnerability_details: vulns 
+            };
+            setResult(mockData);
+            saveToHistory(mockData, code);
+
+        } catch (error) {
+            console.error("Critical error in analyzer:", error);
         } finally {
+
             setIsAnalyzing(false);
             if (result || code.trim()) {
                 toast.success("Analysis Complete", { id: 'risk-scan' });

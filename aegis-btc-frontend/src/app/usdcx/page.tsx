@@ -11,22 +11,14 @@ export default function USDCxPage() {
 
     useEffect(() => {
         setLoading(true);
-        fetch("http://localhost:8000/api/usdcx/pools")
-            .then(res => res.json())
-            .then(data => {
-                setPools(data);
-                setLoading(false);
-            })
-            .catch(err => {
-                console.warn("Backend not reachable, using fallback pools");
-                setPools([
-                    { pair: "sBTC / USDCx", liquidity: "4,200,000", volume_24h: "850,000", apr: "12.4%" },
-                    { pair: "STX / USDCx", liquidity: "8,150,000", volume_24h: "1,200,500", apr: "9.2%" },
-                    { pair: "xUSD / USDCx", liquidity: "2,400,000", volume_24h: "320,000", apr: "5.1%" },
-                    { pair: "ALEX / USDCx", liquidity: "1,800,000", volume_24h: "150,000", apr: "18.5%" }
-                ]);
-                setLoading(false);
-            });
+        // Backend disabled, using high-quality fallback data
+        setPools([
+            { pair: "sBTC / USDCx", liquidity: "4,200,000", volume_24h: "850,000", apr: "12.4%" },
+            { pair: "STX / USDCx", liquidity: "8,150,000", volume_24h: "1,200,500", apr: "9.2%" },
+            { pair: "xUSD / USDCx", liquidity: "2,400,000", volume_24h: "320,000", apr: "5.1%" },
+            { pair: "ALEX / USDCx", liquidity: "1,800,000", volume_24h: "150,000", apr: "18.5%" }
+        ]);
+        setLoading(false);
     }, []);
 
     return (

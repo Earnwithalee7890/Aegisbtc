@@ -11,28 +11,20 @@ export default function SBTCPage() {
 
     useEffect(() => {
         setLoading(true);
-        fetch("http://localhost:8000/api/sbtc/stats")
-            .then(res => res.json())
-            .then(data => {
-                setStats(data);
-                setLoading(false);
-            })
-            .catch(err => {
-                console.warn("Backend not reachable, using fallback data");
-                setStats({
-                    tvl: "$12,450,230",
-                    apy_average: "7.8%",
-                    total_minters: "4,210",
-                    active_yield_strategies: "12",
-                    innovations: [
-                        { title: "Self-Repaying Loans", status: "Active", desc: "Lock sBTC as collateral and borrow USDC. Yield from sBTC automatically pays off the loan principal over time." },
-                        { title: "Cross-Chain Bitcoin Bridge", status: "Beta", desc: "Non-custodial bridging of native BTC to Stacks sBTC with sub-10 minute finality and AI risk auditing." },
-                        { title: "Yield Streaming", status: "Active", desc: "Stream your generated sBTC yield directly to a second address (e.g., payroll or charity) while keeping principal safe." },
-                        { title: "AI-Powered Rebalancing", status: "Upcoming", desc: "Dynamic allocation of sBTC across Bitflow, Alex, and Arkadiko pools based on real-time risk/reward analysis." }
-                    ]
-                });
-                setLoading(false);
-            });
+        // Backend disabled, using high-quality fallback data
+        setStats({
+            tvl: "$12,450,230",
+            apy_average: "7.8%",
+            total_minters: "4,210",
+            active_yield_strategies: "12",
+            innovations: [
+                { title: "Self-Repaying Loans", status: "Active", desc: "Lock sBTC as collateral and borrow USDC. Yield from sBTC automatically pays off the loan principal over time." },
+                { title: "Cross-Chain Bitcoin Bridge", status: "Beta", desc: "Non-custodial bridging of native BTC to Stacks sBTC with sub-10 minute finality and AI risk auditing." },
+                { title: "Yield Streaming", status: "Active", desc: "Stream your generated sBTC yield directly to a second address (e.g., payroll or charity) while keeping principal safe." },
+                { title: "AI-Powered Rebalancing", status: "Upcoming", desc: "Dynamic allocation of sBTC across Bitflow, Alex, and Arkadiko pools based on real-time risk/reward analysis." }
+            ]
+        });
+        setLoading(false);
     }, []);
 
     return (
