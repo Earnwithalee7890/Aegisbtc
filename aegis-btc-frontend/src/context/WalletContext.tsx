@@ -9,8 +9,8 @@ import { fetchCallReadOnlyFunction, principalCV, cvToJSON } from "@stacks/transa
 export const CONTRACT_ADDRESS = "SP2F500B8DTRK1EANJQ054BRAB8DDKN6QCMXGNFBT";
 export const CONTRACT_NAME    = "aegis-unified-protocol";
 
-// Testnet contract (same deployer address pattern on testnet)
-export const TESTNET_CONTRACT_ADDRESS = "SP2F500B8DTRK1EANJQ054BRAB8DDKN6QCMXGNFBT";
+// Testnet contract (same deployer, but with ST version bytes)
+export const TESTNET_CONTRACT_ADDRESS = "ST2F500B8DTRK1EANJQ054BRAB8DDKN6QCQG0J9MJ";
 export const TESTNET_CONTRACT_NAME    = "aegis-unified-protocol";
 
 // Hiro API endpoints
