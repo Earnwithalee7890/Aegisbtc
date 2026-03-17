@@ -6,13 +6,13 @@ import { STACKS_MAINNET, STACKS_TESTNET } from "@stacks/network";
 import { fetchCallReadOnlyFunction, principalCV, cvToJSON } from "@stacks/transactions";
 import { toast } from "react-hot-toast";
 
-// ─── Contract Config ────────────────────────────────────────────────────────
-export const CONTRACT_ADDRESS = "SP2F500B8DTRK1EANJQ054BRAB8DDKN6QCMXGNFBT";
-export const CONTRACT_NAME    = "aegis-unified-protocol";
+// Mainnet official assets
+export const MAINNET_SBTC_ASSET = "SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token::sbtc";
+export const MAINNET_USDCX_ASSET = "SP120SBRBQJ00MCWS7TM5R8WJNTTKD5K0HFRC2CNE.usdcx::usdcx";
 
-// Testnet contract (same deployer, but with ST version bytes)
-export const TESTNET_CONTRACT_ADDRESS = "ST2F500B8DTRK1EANJQ054BRAB8DDKN6QCQG0J9MJ";
-export const TESTNET_CONTRACT_NAME    = "aegis-unified-protocol";
+// Testnet assets (placeholders)
+export const TESTNET_SBTC_SUFFIX = "::mock-sbtc";
+export const TESTNET_USDCX_SUFFIX = "::usdcx";
 
 // Hiro API endpoints
 const MAINNET_API = "https://api.mainnet.hiro.so";
@@ -68,8 +68,8 @@ const WalletContext = createContext<WalletContextValue>({
   refreshBalances: async () => {},
   stacksNetwork: STACKS_MAINNET,
   apiUrl: MAINNET_API,
-  contractAddress: CONTRACT_ADDRESS,
-  contractName: CONTRACT_NAME,
+  contractAddress: "SP2F500B8DTRK1EANJQ054BRAB8DDKN6QCMXGNFBT",
+  contractName: "aegis-unified-protocol",
   isContractMissing: false,
 });
 
@@ -94,8 +94,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const address = network === "Mainnet" ? mainnetAddress : testnetAddress;
   const stacksNetwork = network === "Mainnet" ? STACKS_MAINNET : STACKS_TESTNET;
   const apiUrl = network === "Mainnet" ? MAINNET_API : TESTNET_API;
-  const contractAddress = network === "Mainnet" ? CONTRACT_ADDRESS : TESTNET_CONTRACT_ADDRESS;
-  const contractName = network === "Mainnet" ? CONTRACT_NAME : TESTNET_CONTRACT_NAME;
+
+  // ON MAINNET: The contract address is the USER'S OWN ADDRESS because they deployed it
+  // ON TESTNET: We still use the user's address as a fallback if they deployed there too
+  const contractAddress = address || (network === "Mainnet" ? "SP2F500B8DTRK1EANJQ054BRAB8DDKN6QCMXGNFBT" : "ST2F500B8DTRK1EANJQ054BRAB8DDKN6QCQG0J9MJ");
+  const contractName = "aegis-unified-protocol";
 
   // ─── Load addresses from session ─────────────────────────────────────────
   const loadAddressFromSession = useCallback(() => {
@@ -156,8 +159,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     setIsLoadingBalances(true);
     const currentApiUrl = network === "Mainnet" ? MAINNET_API : TESTNET_API;
     const currentNetwork = network === "Mainnet" ? STACKS_MAINNET : STACKS_TESTNET;
-    const currentContract = network === "Mainnet" ? CONTRACT_ADDRESS : TESTNET_CONTRACT_ADDRESS;
-    const currentContractName = network === "Mainnet" ? CONTRACT_NAME : TESTNET_CONTRACT_NAME;
+    const currentContract = contractAddress;
+    const currentContractName = contractName;
 
     try {
       console.log(`[WalletContext] Fetching balances for ${currentAddress} on ${network}...`);
@@ -179,12 +182,13 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       const stxVal = (isNaN(stxMicro) ? 0 : stxMicro / 1_000_000).toFixed(2);
 
       // Token asset identifiers
-      const sbtcAssetId  = `${currentContract}.${currentContractName}::mock-sbtc`;
-      const usdcxAssetId = `${currentContract}.${currentContractName}::usdcx`;
+      const sbtcAssetId  = network === "Mainnet" ? MAINNET_SBTC_ASSET : `${currentContract}.${currentContractName}${TESTNET_SBTC_SUFFIX}`;
+      const usdcxAssetId = network === "Mainnet" ? MAINNET_USDCX_ASSET : `${currentContract}.${currentContractName}${TESTNET_USDCX_SUFFIX}`;
 
       const sbtcRaw  = ftData?.fungible_tokens?.[sbtcAssetId]?.balance || "0";
       const usdcxRaw = ftData?.fungible_tokens?.[usdcxAssetId]?.balance || "0";
 
+      // Decimals: sBTC is 8, USDCx is 6
       const sbtcVal  = (Number(sbtcRaw)  / 1e8).toFixed(8);
       const usdcxVal = (Number(usdcxRaw) / 1e6).toFixed(2);
 
