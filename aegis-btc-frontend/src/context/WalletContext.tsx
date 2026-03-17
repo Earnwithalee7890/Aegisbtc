@@ -104,31 +104,40 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       let mnAddr = userDataAny.profile?.stxAddress?.mainnet || userDataAny.stxAddress?.mainnet || "";
       let tnAddr = userDataAny.profile?.stxAddress?.testnet || userDataAny.stxAddress?.testnet || "";
       
-      // Fallback for some wallet versions where stxAddress is a direct string
-      if (!mnAddr && typeof userDataAny.profile?.stxAddress === 'string') {
-          const addr = userDataAny.profile.stxAddress;
-          if (addr.startsWith('SP') || addr.startsWith('sp')) mnAddr = addr;
-          else if (addr.startsWith('ST') || addr.startsWith('st')) tnAddr = addr;
-      }
+      // Fallback for some wallet versions (Leather) where stxAddress is a direct string or in profile
+      const rawAddress = userDataAny.profile?.stxAddress || userDataAny.stxAddress;
       
-      if (!mnAddr && typeof userDataAny.stxAddress === 'string') {
-          const addr = userDataAny.stxAddress;
-          if (addr.startsWith('SP') || addr.startsWith('sp')) mnAddr = addr;
-          else if (addr.startsWith('ST') || addr.startsWith('st')) tnAddr = addr;
+      if (typeof rawAddress === 'string') {
+          if (rawAddress.startsWith('SP') || rawAddress.startsWith('sp')) {
+              mnAddr = rawAddress;
+          } else if (rawAddress.startsWith('ST') || rawAddress.startsWith('st')) {
+              tnAddr = rawAddress;
+          }
       }
 
+      // Final attempt: check if we have either SP or ST and populate both if possible
+      // (some wallets only provide one, but we can derive or at least identify)
+      if (mnAddr && !tnAddr) {
+          console.log("[WalletContext] Found Mainnet address but no Testnet address.");
+      }
+      if (tnAddr && !mnAddr) {
+          console.log("[WalletContext] Found Testnet address but no Mainnet address.");
+      }
 
       setMainnetAddress(mnAddr);
       setTestnetAddress(tnAddr);
       setIsConnected(true);
-      console.log("[WalletContext] Session data:", userDataAny);
+      
       console.log("[WalletContext] Addresses loaded:", { mainnet: mnAddr, testnet: tnAddr });
+      
+      // If we are on a network but don't have an address for it, but we DO have one for the other,
+      // stay on the saved network but the UI will show disconnected or prompt.
+      // We don't force a switch here because that's what the user complained about.
     } else {
       setIsConnected(false);
       setMainnetAddress("");
       setTestnetAddress("");
     }
-
   }, []);
 
   // ─── Fetch balances ───────────────────────────────────────────────────────
