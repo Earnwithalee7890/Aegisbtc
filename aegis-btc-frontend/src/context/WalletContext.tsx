@@ -56,7 +56,7 @@ const DEFAULT_BALANCES: WalletBalances = {
 
 const WalletContext = createContext<WalletContextValue>({
   isConnected: false,
-  network: "Testnet",
+  network: "Mainnet",
   setNetwork: () => {},
   address: "",
   mainnetAddress: "",
@@ -64,15 +64,24 @@ const WalletContext = createContext<WalletContextValue>({
   balances: DEFAULT_BALANCES,
   isLoadingBalances: false,
   refreshBalances: async () => {},
-  stacksNetwork: STACKS_TESTNET,
-  apiUrl: TESTNET_API,
-  contractAddress: TESTNET_CONTRACT_ADDRESS,
-  contractName: TESTNET_CONTRACT_NAME,
+  stacksNetwork: STACKS_MAINNET,
+  apiUrl: MAINNET_API,
+  contractAddress: CONTRACT_ADDRESS,
+  contractName: CONTRACT_NAME,
 });
 
 export function WalletProvider({ children }: { children: ReactNode }) {
   const [isConnected, setIsConnected] = useState(false);
-  const [network, setNetworkState] = useState<NetworkType>("Testnet");
+  
+  // Use initializer function to prevent "Testnet" flash on refresh
+  const [network, setNetworkState] = useState<NetworkType>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("aegis_network");
+      if (saved === "Mainnet" || saved === "Testnet") return saved as NetworkType;
+    }
+    return "Mainnet";
+  });
+
   const [mainnetAddress, setMainnetAddress] = useState("");
   const [testnetAddress, setTestnetAddress] = useState("");
   const [balances, setBalances] = useState<WalletBalances>(DEFAULT_BALANCES);
@@ -150,11 +159,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
       // STX balance parsing (Hiro v2 returns balance as string, v1 as number/string)
       const stxRaw = stxData?.balance || ftData?.stx?.balance || "0";
-      console.log(`[WalletContext] Raw STX from API:`, stxRaw);
+      console.log(`[WalletContext] Address: ${currentAddress} | Raw STX:`, stxRaw);
       
-      const stxMicro = typeof stxRaw === "string" ? parseInt(stxRaw) : stxRaw;
-      const stxVal = (stxMicro / 1_000_000).toFixed(2);
-
+      const stxMicro = typeof stxRaw === "string" ? parseInt(stxRaw) : Number(stxRaw);
+      const stxVal = (isNaN(stxMicro) ? 0 : stxMicro / 1_000_000).toFixed(2);
 
       // Token asset identifiers
       const sbtcAssetId  = `${currentContract}.${currentContractName}::mock-sbtc`;
@@ -227,19 +235,14 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   // ─── Init on mount ────────────────────────────────────────────────────────
   useEffect(() => {
-    // Load network preference from localStorage
-    const savedNetwork = localStorage.getItem("aegis_network") as NetworkType;
-    if (savedNetwork && (savedNetwork === "Mainnet" || savedNetwork === "Testnet")) {
-      setNetworkState(savedNetwork);
-    }
+    // Initial sync
+    loadAddressFromSession();
 
     // Handle redirect back after Leather sign-in
     if (userSession.isSignInPending()) {
       userSession.handlePendingSignIn().then(() => {
         loadAddressFromSession();
       });
-    } else {
-      loadAddressFromSession();
     }
 
     // Poll every 2 seconds until connected (handles async wallet popup finish)
