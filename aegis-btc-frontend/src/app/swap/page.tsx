@@ -24,22 +24,40 @@ export default function Swap() {
     const [isSwapping, setIsSwapping] = useState(false);
 
     const sBtcPrice = 65000;
+    const stxPrice = 2.5;
 
     const getEstimatedOut = () => {
         if (!amount || isNaN(Number(amount))) return "0";
         if (fromToken === "sBTC") return (Number(amount) * sBtcPrice).toFixed(2);
-        return (Number(amount) / sBtcPrice).toFixed(6);
+        if (fromToken === "STX") return (Number(amount) * stxPrice).toFixed(2);
+        // USDCx to something
+        if (toToken === "sBTC") return (Number(amount) / sBtcPrice).toFixed(6);
+        return (Number(amount) / stxPrice).toFixed(2);
     };
 
     // Get live wallet balance based on what is selected
-    const walletBalance = fromToken === "sBTC" ? balances.sbtc : balances.usdcx;
+    const walletBalance = fromToken === "sBTC" ? balances.sbtc : fromToken === "STX" ? balances.stx : balances.usdcx;
 
     const handleSwap = async () => {
         if (!amount || isNaN(Number(amount))) return;
         setIsSwapping(true);
 
-        const functionName = fromToken === "sBTC" ? "swap-sbtc-to-usdcx" : "swap-usdcx-to-sbtc";
-        const factor = fromToken === "sBTC" ? 100000000 : 1000000;
+        let functionName = "";
+        let factor = 1000000; // default for 6 decimals
+
+        if (fromToken === "sBTC") {
+            functionName = "swap-sbtc-to-usdcx";
+            factor = 100000000;
+        } else if (fromToken === "STX") {
+            functionName = "swap-stx-to-usdcx";
+            factor = 1000000;
+        } else {
+            // USDCx to... (unsupported in v3.1 snippet)
+            toast.error("Reverse swaps are coming in v3.2!");
+            setIsSwapping(false);
+            return;
+        }
+
         const microAmount = Math.floor(Number(amount) * factor);
 
         openContractCall({
@@ -99,10 +117,18 @@ export default function Swap() {
                                     placeholder="0.0"
                                     className="bg-transparent text-2xl font-bold text-white focus:outline-none w-full placeholder:text-surface-700"
                                 />
-                                <div className="bg-surface-800 px-3 py-1.5 rounded-xl text-sm font-bold text-white flex items-center gap-2">
-                                    <div className={`w-4 h-4 rounded-full ${fromToken === "sBTC" ? "bg-orange-500" : "bg-primary-500"}`} />
+                                <button 
+                                    onClick={() => {
+                                        if (fromToken === "sBTC") setFromToken("STX");
+                                        else if (fromToken === "STX") setFromToken("sBTC");
+                                        else setFromToken("STX"); // from usdcx to stx
+                                    }}
+                                    className="bg-surface-800 hover:bg-surface-700 px-3 py-1.5 rounded-xl text-sm font-bold text-white flex items-center gap-2 transition-colors shrink-0"
+                                >
+                                    <div className={`w-4 h-4 rounded-full ${fromToken === "sBTC" ? "bg-orange-500" : fromToken === "STX" ? "bg-primary-500" : "bg-accent-500"}`} />
                                     {fromToken}
-                                </div>
+                                    <RefreshCw className="w-3 h-3 opacity-50" />
+                                </button>
                             </div>
                         </div>
 

@@ -209,7 +209,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         }
       };
 
-      const [vSbtcRaw, vDebtRaw] = await Promise.all([
+      const [vStxRaw, vSbtcRaw, vDebtRaw] = await Promise.all([
+        fetchReadOnly("get-stx-balance"),
         fetchReadOnly("get-sbtc-balance"),
         fetchReadOnly("get-usdcx-debt")
       ]);
@@ -218,7 +219,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         stx: stxVal,
         sbtc: sbtcVal,
         usdcx: usdcxVal,
-        vaultStx: "0.00",
+        vaultStx: (Number(vStxRaw) / 1e6).toFixed(2),
         vaultSbtc: (Number(vSbtcRaw) / 1e8).toFixed(8),
         usdcxDebt: (Number(vDebtRaw) / 1e6).toFixed(2)
       });

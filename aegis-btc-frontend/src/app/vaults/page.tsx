@@ -56,9 +56,34 @@ export default function Vaults() {
         return false;
     };
 
-    // STX Deposit is hidden in v3.1 UI
     const handleDepositStx = async () => {
-        toast.error("STX Deposits are disabled in v3.1. Please use the sBTC Vault.");
+        if (handleContractCheck()) return;
+        if (!depositAmountStx || isNaN(Number(depositAmountStx))) return;
+        setIsDepositingStx(true);
+
+        const microStxAmount = Math.floor(Number(depositAmountStx) * 1000000);
+
+        if (!isConnected || !address) {
+            toast.error("Connect your wallet");
+            setIsDepositingStx(false);
+            return;
+        }
+
+        openContractCall({
+            network: stacksNetwork,
+            contractAddress: CONTRACT_ADDRESS,
+            contractName: CONTRACT_NAME,
+            functionName: 'deposit-stx',
+            functionArgs: [uintCV(microStxAmount)],
+            appDetails: { name: 'Aegis Vaults', icon: window.location.origin + '/favicon.ico' },
+            onFinish: data => {
+                toast.success(`STX Deposit Broadcasted!`, { duration: 5000, icon: '🚀' });
+                setIsDepositingStx(false);
+                setDepositAmountStx("");
+                setTimeout(() => refreshBalances(), 4000);
+            },
+            onCancel: () => { setIsDepositingStx(false); }
+        });
     };
 
     const handleDepositSbtc = async () => {
@@ -169,8 +194,8 @@ export default function Vaults() {
                     animate={{ opacity: 1, y: 0 }}
                     className="lg:col-span-2 space-y-8"
                 >
-                    {/* STX Vault (Hidden in v3.1) */}
-                    <div className="hidden">
+                    {/* STX Vault */}
+                    <div className="glass-panel p-8 rounded-3xl relative overflow-hidden">
                         <div className="flex items-center justify-between mb-8">
                             <div className="flex items-center gap-4">
                                 <div className="w-14 h-14 bg-gradient-to-br from-primary-500/20 to-primary-600/20 rounded-2xl flex items-center justify-center border border-primary-500/30">
