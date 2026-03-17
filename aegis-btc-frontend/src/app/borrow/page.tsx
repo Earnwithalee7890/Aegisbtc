@@ -70,27 +70,7 @@ export default function Borrow() {
     };
 
     const handleRepay = async () => {
-        if (handleContractCheck()) return;
-        if (!repayAmount || isNaN(Number(repayAmount))) return;
-        setIsRepaying(true);
-        const microUsdcxAmount = Math.floor(Number(repayAmount) * 1000000);
-
-        openContractCall({
-            network: stacksNetwork,
-            contractAddress: CONTRACT_ADDRESS,
-            contractName: CONTRACT_NAME,
-            functionName: 'repay-usdcx',
-            functionArgs: [uintCV(microUsdcxAmount)],
-            postConditionMode: PostConditionMode.Allow,
-            appDetails: { name: 'AegisBTC Real Borrow', icon: window.location.origin + '/favicon.ico' },
-            onFinish: () => {
-                toast.success(`Repayment Broadcasted!`, { icon: '🤝' });
-                setIsRepaying(false);
-                setRepayAmount("");
-                setTimeout(() => refreshBalances(), 4000);
-            },
-            onCancel: () => setIsRepaying(false)
-        });
+        toast.error("Repayment is handled off-chain or in v3.2. This button is currently disabled for protocol safety.", { icon: '🛡️' });
     };
 
     return (

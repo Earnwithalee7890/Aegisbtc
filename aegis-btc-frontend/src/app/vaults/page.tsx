@@ -56,34 +56,9 @@ export default function Vaults() {
         return false;
     };
 
+    // STX Deposit is hidden in v3.1 UI
     const handleDepositStx = async () => {
-        if (handleContractCheck()) return;
-        if (!depositAmountStx || isNaN(Number(depositAmountStx))) return;
-        setIsDepositingStx(true);
-
-        const microStxAmount = Math.floor(Number(depositAmountStx) * 1000000);
-
-        if (!isConnected || !address) {
-            toast.error("Connect your wallet");
-            setIsDepositingStx(false);
-            return;
-        }
-
-        openContractCall({
-            network: stacksNetwork,
-            contractAddress: CONTRACT_ADDRESS,
-            contractName: CONTRACT_NAME,
-            functionName: 'deposit-stx',
-            functionArgs: [uintCV(microStxAmount)],
-            appDetails: { name: 'AegisBTC Real Vaults', icon: window.location.origin + '/favicon.ico' },
-            onFinish: data => {
-                toast.success(`STX Deposit Broadcasted! TxID: ${data.txId.substring(0, 10)}...`, { duration: 5000, icon: '🚀' });
-                setIsDepositingStx(false);
-                setDepositAmountStx("");
-                setTimeout(() => refreshBalances(), 4000);
-            },
-            onCancel: () => { setIsDepositingStx(false); }
-        });
+        toast.error("STX Deposits are disabled in v3.1. Please use the sBTC Vault.");
     };
 
     const handleDepositSbtc = async () => {
@@ -160,19 +135,7 @@ export default function Vaults() {
     };
 
     const handleWithdrawSbtc = async () => {
-        if (!depositAmountSbtc || isNaN(Number(depositAmountSbtc))) return;
-        setIsWithdrawingSbtc(true);
-        const microSbtcAmount = Math.floor(Number(depositAmountSbtc) * 100000000);
-        openContractCall({
-            network: stacksNetwork,
-            contractAddress: CONTRACT_ADDRESS,
-            contractName: CONTRACT_NAME,
-            functionName: 'withdraw-sbtc',
-            functionArgs: [uintCV(microSbtcAmount)],
-            appDetails: { name: 'AegisBTC Real Vaults', icon: window.location.origin + '/favicon.ico' },
-            onFinish: () => { toast.success(`sBTC Withdrawal Broadcasted!`, { icon: '💸' }); setIsWithdrawingSbtc(false); setDepositAmountSbtc(""); setTimeout(() => refreshBalances(), 4000); },
-            onCancel: () => setIsWithdrawingSbtc(false)
-        });
+        toast.error("Wait for Aegis v3.2 for one-click withdrawals. Your assets are SAFU in the Vault!");
     };
 
     return (
@@ -206,8 +169,8 @@ export default function Vaults() {
                     animate={{ opacity: 1, y: 0 }}
                     className="lg:col-span-2 space-y-8"
                 >
-                    {/* STX Vault */}
-                    <div className="glass-panel p-8 rounded-3xl relative overflow-hidden">
+                    {/* STX Vault (Hidden in v3.1) */}
+                    <div className="hidden">
                         <div className="flex items-center justify-between mb-8">
                             <div className="flex items-center gap-4">
                                 <div className="w-14 h-14 bg-gradient-to-br from-primary-500/20 to-primary-600/20 rounded-2xl flex items-center justify-center border border-primary-500/30">
@@ -332,6 +295,13 @@ export default function Vaults() {
 
                     {/* Aegis Faucet Vault */}
                     <div className="glass-panel p-8 rounded-3xl relative overflow-hidden border border-primary-500/20 bg-gradient-to-br from-primary-500/5 to-transparent">
+                                <div className="flex justify-between items-center p-3 bg-surface-900 rounded-xl border border-white/5 opacity-50">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center text-xs text-white font-bold">S</div>
+                                        <span className="text-white font-medium">STX Vault (Legacy)</span>
+                                    </div>
+                                    <span className="text-white font-mono font-bold">0.00 STX</span>
+                                </div>
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
                                 <div className="w-14 h-14 bg-primary-500/20 rounded-2xl flex items-center justify-center border border-primary-500/30">

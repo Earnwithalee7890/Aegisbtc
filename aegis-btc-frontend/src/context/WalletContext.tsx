@@ -6,11 +6,15 @@ import { STACKS_MAINNET, STACKS_TESTNET } from "@stacks/network";
 import { fetchCallReadOnlyFunction, principalCV, cvToJSON } from "@stacks/transactions";
 import { toast } from "react-hot-toast";
 
-// Mainnet official assets
+// Aegis v3.1 Internal Tokens (Internal to your contract)
+export const AEGIS_SBTC_SUFFIX = "::aegis-sbtc";
+export const AEGIS_USDCX_SUFFIX = "::aegis-usdcx";
+
+// Mainnet official external assets (for wallet display)
 export const MAINNET_SBTC_ASSET = "SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token::sbtc";
 export const MAINNET_USDCX_ASSET = "SP120SBRBQJ00MCWS7TM5R8WJNTTKD5K0HFRC2CNE.usdcx::usdcx";
 
-// Testnet assets (placeholders)
+// Testnet legacy assets
 export const TESTNET_SBTC_SUFFIX = "::mock-sbtc";
 export const TESTNET_USDCX_SUFFIX = "::usdcx";
 
@@ -95,9 +99,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const stacksNetwork = network === "Mainnet" ? STACKS_MAINNET : STACKS_TESTNET;
   const apiUrl = network === "Mainnet" ? MAINNET_API : TESTNET_API;
 
-  // ON MAINNET: The contract address is the USER'S OWN ADDRESS because they deployed it
-  // ON TESTNET: We still use the user's address as a fallback if they deployed there too
-  const contractAddress = address || (network === "Mainnet" ? "SP2F500B8DTRK1EANJQ054BRAB8DDKN6QCMXGNFBT" : "ST2F500B8DTRK1EANJQ054BRAB8DDKN6QCQG0J9MJ");
+  // ON MAINNET: Hardcoded to the user's specific developer address
+  // ON TESTNET: Fallback to ST version of the same address
+  const contractAddress = network === "Mainnet" 
+    ? "SP2F500B8DTRK1EANJQ054BRAB8DDKN6QCMXGNFBT" 
+    : "ST2F500B8DTRK1EANJQ054BRAB8DDKN6QCQG0J9MJ";
   const contractName = "aegis-unified-protocol";
 
   // ─── Load addresses from session ─────────────────────────────────────────
@@ -151,7 +157,6 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     const currentAddress = network === "Mainnet" ? mainnetAddress : testnetAddress;
     
     if (!currentAddress || !isConnected) {
-      console.log("[WalletContext] Skipping refresh: No address or not connected", { currentAddress, isConnected });
       setBalances(DEFAULT_BALANCES);
       return;
     }
@@ -163,109 +168,67 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     const currentContractName = contractName;
 
     try {
-      console.log(`[WalletContext] Fetching balances for ${currentAddress} on ${network}...`);
-      
       // 1. Fetch wallet token balances from Hiro API
-      // Use v2 for STX balance as it's more reliable
       const stxRes = await fetch(`${currentApiUrl}/extended/v2/addresses/${currentAddress}/balances/stx`);
       const stxData = stxRes.ok ? await stxRes.json() : { balance: "0" };
 
-      // Also get fungible tokens (v1 still works best here)
       const ftRes = await fetch(`${currentApiUrl}/extended/v1/address/${currentAddress}/balances`);
       const ftData = ftRes.ok ? await ftRes.json() : { fungible_tokens: {} };
 
-      // STX balance parsing (Hiro v2 returns balance as string, v1 as number/string)
-      const stxRaw = stxData?.balance || ftData?.stx?.balance || "0";
-      console.log(`[WalletContext] Address: ${currentAddress} | Raw STX:`, stxRaw);
-      
-      const stxMicro = typeof stxRaw === "string" ? parseInt(stxRaw) : Number(stxRaw);
-      const stxVal = (isNaN(stxMicro) ? 0 : stxMicro / 1_000_000).toFixed(2);
+      const stxRaw = stxData?.balance || "0";
+      const stxVal = (parseInt(stxRaw) / 1_000_000).toFixed(2);
 
-      // Token asset identifiers
-      const sbtcAssetId  = network === "Mainnet" ? MAINNET_SBTC_ASSET : `${currentContract}.${currentContractName}${TESTNET_SBTC_SUFFIX}`;
-      const usdcxAssetId = network === "Mainnet" ? MAINNET_USDCX_ASSET : `${currentContract}.${currentContractName}${TESTNET_USDCX_SUFFIX}`;
+      // Aegis v3.1 Internal Tokens
+      const sbtcAssetId  = `${currentContract}.${currentContractName}${AEGIS_SBTC_SUFFIX}`;
+      const usdcxAssetId = `${currentContract}.${currentContractName}${AEGIS_USDCX_SUFFIX}`;
 
       const sbtcRaw  = ftData?.fungible_tokens?.[sbtcAssetId]?.balance || "0";
       const usdcxRaw = ftData?.fungible_tokens?.[usdcxAssetId]?.balance || "0";
 
-      // Decimals: sBTC is 8, USDCx is 6
       const sbtcVal  = (Number(sbtcRaw)  / 1e8).toFixed(8);
       const usdcxVal = (Number(usdcxRaw) / 1e6).toFixed(2);
 
-
       // 2. Fetch on-chain vault deposits via read-only calls
-      // ISOLATED to prevent contract errors from zeroing out the whole wallet balance
-      let vaultStxVal   = "0.00";
-      let vaultSbtcVal  = "0.00000000";
-      let usdcxDebtVal  = "0.00";
+      const fetchReadOnly = async (functionName: string) => {
+        try {
+          const response = await fetchCallReadOnlyFunction({
+            network: currentNetwork,
+            contractAddress: currentContract,
+            contractName: currentContractName,
+            functionName,
+            functionArgs: [principalCV(currentAddress)],
+            senderAddress: currentAddress,
+          });
+          const resJson = cvToJSON(response);
+          // Return the inner value from Clarity response
+          const val = resJson?.value?.value || resJson?.value || "0";
+          return String(val);
+        } catch (e) {
+          console.warn(`[WalletContext] Read-only ${functionName} failed:`, e);
+          return "0";
+        }
+      };
 
-      try {
-        const stxVaultRes = await fetchCallReadOnlyFunction({
-          network: currentNetwork,
-          contractAddress: currentContract,
-          contractName: currentContractName,
-          functionName: "get-stx-balance",
-          functionArgs: [principalCV(currentAddress)],
-          senderAddress: currentAddress,
-        });
-        const resJson = cvToJSON(stxVaultRes);
-        // Robust value extraction for different return types
-        const rawVal = resJson?.value?.value || resJson?.value || "0";
-        vaultStxVal = (parseInt(String(rawVal)) / 1e6).toFixed(2);
-      } catch (e) { 
-        console.warn("[WalletContext] Vault STX fetch skipped (contract not found or function missing)");
-      }
-
-      try {
-        const sbtcVaultRes = await fetchCallReadOnlyFunction({
-          network: currentNetwork,
-          contractAddress: currentContract,
-          contractName: currentContractName,
-          functionName: "get-sbtc-balance",
-          functionArgs: [principalCV(currentAddress)],
-          senderAddress: currentAddress,
-        });
-        const resJson = cvToJSON(sbtcVaultRes);
-        const rawVal = resJson?.value?.value || resJson?.value || "0";
-        vaultSbtcVal = (parseInt(String(rawVal)) / 1e8).toFixed(8);
-      } catch (e) {
-        console.warn("[WalletContext] Vault sBTC fetch skipped");
-      }
-
-      try {
-        const debtRes = await fetchCallReadOnlyFunction({
-          network: currentNetwork,
-          contractAddress: currentContract,
-          contractName: currentContractName,
-          functionName: "get-usdcx-debt",
-          functionArgs: [principalCV(currentAddress)],
-          senderAddress: currentAddress,
-        });
-        const resJson = cvToJSON(debtRes);
-        const rawVal = resJson?.value?.value || resJson?.value || "0";
-        usdcxDebtVal = (parseInt(String(rawVal)) / 1e6).toFixed(2);
-      } catch (e) {
-        console.warn("[WalletContext] Debt fetch skipped");
-      }
+      const [vSbtcRaw, vDebtRaw] = await Promise.all([
+        fetchReadOnly("get-sbtc-balance"),
+        fetchReadOnly("get-usdcx-debt")
+      ]);
 
       setBalances({
-        stx:       stxVal,
-        sbtc:      sbtcVal,
-        usdcx:     usdcxVal,
-        vaultStx:  vaultStxVal,
-        vaultSbtc: vaultSbtcVal,
-        usdcxDebt: usdcxDebtVal,
+        stx: stxVal,
+        sbtc: sbtcVal,
+        usdcx: usdcxVal,
+        vaultStx: "0.00",
+        vaultSbtc: (Number(vSbtcRaw) / 1e8).toFixed(8),
+        usdcxDebt: (Number(vDebtRaw) / 1e6).toFixed(2)
       });
 
     } catch (err) {
-      console.error("[WalletContext] Critical error in refreshBalances:", err);
-      // Even if contract fetch fails, we keep the wallet balances we already fetched.
-      // unless wallet fetch itself failed.
+      console.error("[WalletContext] refreshBalances error:", err);
     } finally {
-
       setIsLoadingBalances(false);
     }
-  }, [network, mainnetAddress, testnetAddress, isConnected]);
+  }, [network, mainnetAddress, testnetAddress, isConnected, contractAddress, contractName]);
 
   // ─── Init on mount ────────────────────────────────────────────────────────
   useEffect(() => {
