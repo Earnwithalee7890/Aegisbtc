@@ -1,3 +1,5 @@
+"use client";
+
 import { openContractDeploy } from '@stacks/connect';
 import { STACKS_TESTNET } from '@stacks/network';
 import { toast } from 'react-hot-toast';
