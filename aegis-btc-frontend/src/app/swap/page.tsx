@@ -1,32 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowDownUp, Zap, Activity, RefreshCw } from "lucide-react";
-import { userSession } from "@/components/layout/Navbar";
+import { useWallet } from "@/context/WalletContext";
 import { openContractCall } from '@stacks/connect';
-import { STACKS_MAINNET } from '@stacks/network';
-import {
-    uintCV,
-    principalCV,
-    PostConditionMode,
-    fetchCallReadOnlyFunction,
-    cvToJSON
-} from '@stacks/transactions';
+import { uintCV, PostConditionMode } from '@stacks/transactions';
 import { toast } from 'react-hot-toast';
 
-const CONTRACT_ADDRESS = "SP2F500B8DTRK1EANJQ054BRAB8DDKN6QCMXGNFBT";
-const CONTRACT_NAME = "aegis-unified-protocol";
-const NETWORK = STACKS_MAINNET;
-const API_URL = "https://api.mainnet.hiro.so";
-
 export default function Swap() {
+    const {
+        balances,
+        isLoadingBalances,
+        refreshBalances,
+        stacksNetwork,
+        contractAddress: CONTRACT_ADDRESS,
+        contractName: CONTRACT_NAME,
+    } = useWallet();
+
     const [fromToken, setFromToken] = useState("sBTC");
     const [toToken, setToToken] = useState("USDCx");
     const [amount, setAmount] = useState("");
-    const [walletBalance, setWalletBalance] = useState("0");
     const [isSwapping, setIsSwapping] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
 
     const sBtcPrice = 65000;
 
@@ -36,32 +31,8 @@ export default function Swap() {
         return (Number(amount) / sBtcPrice).toFixed(6);
     };
 
-    const fetchBalance = async () => {
-        if (userSession.isUserSignedIn()) {
-            setIsLoading(true);
-            try {
-                const userData = userSession.loadUserData();
-                const address = userData.profile.stxAddress.mainnet || userData.profile.stxAddress.testnet;
-                const res = await fetch(`${API_URL}/extended/v1/address/${address}/balances`);
-                const data = await res.json();
-
-                if (fromToken === "sBTC") {
-                    const sbtcData = data?.fungible_tokens?.[`${CONTRACT_ADDRESS}.${CONTRACT_NAME}::aegis-sbtc`];
-                    setWalletBalance((parseInt(sbtcData?.balance || "0") / 100000000).toFixed(4));
-                } else {
-                    const usdcxData = data?.fungible_tokens?.[`${CONTRACT_ADDRESS}.${CONTRACT_NAME}::aegis-usdcx`];
-                    setWalletBalance((parseInt(usdcxData?.balance || "0") / 1000000).toFixed(2));
-                }
-            } catch (e) {
-                console.error(e);
-            }
-            setIsLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchBalance();
-    }, [fromToken]);
+    // Get live wallet balance based on what is selected
+    const walletBalance = fromToken === "sBTC" ? balances.sbtc : balances.usdcx;
 
     const handleSwap = async () => {
         if (!amount || isNaN(Number(amount))) return;
@@ -72,18 +43,18 @@ export default function Swap() {
         const microAmount = Math.floor(Number(amount) * factor);
 
         openContractCall({
-            network: NETWORK,
+            network: stacksNetwork,
             contractAddress: CONTRACT_ADDRESS,
             contractName: CONTRACT_NAME,
             functionName,
             functionArgs: [uintCV(microAmount)],
             postConditionMode: PostConditionMode.Allow,
             appDetails: { name: 'Aegis Swap', icon: window.location.origin + '/favicon.ico' },
-            onFinish: data => {
+            onFinish: () => {
                 toast.success(`Swap Broadcasted!`, { icon: '🔄' });
                 setIsSwapping(false);
                 setAmount("");
-                setTimeout(fetchBalance, 5000);
+                setTimeout(() => refreshBalances(), 4000);
             },
             onCancel: () => setIsSwapping(false)
         });
@@ -118,7 +89,7 @@ export default function Swap() {
                         <div className="bg-surface-900 border border-white/5 p-4 rounded-2xl">
                             <div className="flex justify-between text-xs text-surface-400 mb-2">
                                 <span>From</span>
-                                <span>Balance: {isLoading ? "..." : walletBalance}</span>
+                                <span>Balance: {isLoadingBalances ? "..." : walletBalance}</span>
                             </div>
                             <div className="flex items-center gap-4">
                                 <input
