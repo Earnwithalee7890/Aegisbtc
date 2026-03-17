@@ -89,11 +89,30 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const loadAddressFromSession = useCallback(() => {
     if (userSession.isUserSignedIn()) {
       const userData = userSession.loadUserData();
-      const mnAddr = userData.profile.stxAddress?.mainnet ?? "";
-      const tnAddr = userData.profile.stxAddress?.testnet ?? "";
-      setMainnetAddress(typeof mnAddr === "string" ? mnAddr : "");
-      setTestnetAddress(typeof tnAddr === "string" ? tnAddr : "");
+      
+      // Attempt to get addresses from various possible locations in userData
+      const userDataAny = userData as any;
+      let mnAddr = userDataAny.profile?.stxAddress?.mainnet || userDataAny.stxAddress?.mainnet || "";
+      let tnAddr = userDataAny.profile?.stxAddress?.testnet || userDataAny.stxAddress?.testnet || "";
+      
+      // Fallback for some wallet versions where stxAddress is a direct string
+      if (!mnAddr && typeof userDataAny.profile?.stxAddress === 'string') {
+          const addr = userDataAny.profile.stxAddress;
+          if (addr.startsWith('SP') || addr.startsWith('sp')) mnAddr = addr;
+          else if (addr.startsWith('ST') || addr.startsWith('st')) tnAddr = addr;
+      }
+      
+      if (!mnAddr && typeof userDataAny.stxAddress === 'string') {
+          const addr = userDataAny.stxAddress;
+          if (addr.startsWith('SP') || addr.startsWith('sp')) mnAddr = addr;
+          else if (addr.startsWith('ST') || addr.startsWith('st')) tnAddr = addr;
+      }
+
+
+      setMainnetAddress(mnAddr);
+      setTestnetAddress(tnAddr);
       setIsConnected(true);
+      console.log("[WalletContext] Addresses loaded:", { mainnet: mnAddr, testnet: tnAddr });
     } else {
       setIsConnected(false);
       setMainnetAddress("");
@@ -104,7 +123,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   // ─── Fetch balances ───────────────────────────────────────────────────────
   const refreshBalances = useCallback(async () => {
     const currentAddress = network === "Mainnet" ? mainnetAddress : testnetAddress;
+    
     if (!currentAddress || !isConnected) {
+      console.log("[WalletContext] Skipping refresh: No address or not connected", { currentAddress, isConnected });
       setBalances(DEFAULT_BALANCES);
       return;
     }
@@ -116,24 +137,31 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     const currentContractName = network === "Mainnet" ? CONTRACT_NAME : TESTNET_CONTRACT_NAME;
 
     try {
+      console.log(`[WalletContext] Fetching balances for ${currentAddress} on ${network}...`);
+      
       // 1. Fetch wallet token balances from Hiro API
-      const res = await fetch(`${currentApiUrl}/extended/v1/address/${currentAddress}/balances`);
-      const data = await res.json();
+      // Use v2 for STX balance as it's more reliable
+      const stxRes = await fetch(`${currentApiUrl}/extended/v2/addresses/${currentAddress}/balances/stx`);
+      const stxData = stxRes.ok ? await stxRes.json() : { balance: "0" };
 
-      // STX balance
-      const stxMicro = parseInt(data?.stx?.balance ?? "0");
-      const stxVal = (stxMicro / 1_000_000).toFixed(2);
+      // Also get fungible tokens (v1 still works best here)
+      const ftRes = await fetch(`${currentApiUrl}/extended/v1/address/${currentAddress}/balances`);
+      const ftData = ftRes.ok ? await ftRes.json() : { fungible_tokens: {} };
 
-      // The token asset identifiers in Clarity use the ft name defined via define-fungible-token
-      // In aegis-protocol.clar: (define-fungible-token mock-sbtc) and (define-fungible-token usdcx)
+      // STX balance parsing (Hiro v2 returns balance as string)
+      const stxMicro = stxData?.balance || ftData?.stx?.balance || "0";
+      const stxVal = (Number(stxMicro) / 1_000_000).toFixed(2);
+
+      // Token asset identifiers
       const sbtcAssetId  = `${currentContract}.${currentContractName}::mock-sbtc`;
       const usdcxAssetId = `${currentContract}.${currentContractName}::usdcx`;
 
-      const sbtcRaw  = parseInt(data?.fungible_tokens?.[sbtcAssetId]?.balance  ?? "0");
-      const usdcxRaw = parseInt(data?.fungible_tokens?.[usdcxAssetId]?.balance ?? "0");
+      const sbtcRaw  = ftData?.fungible_tokens?.[sbtcAssetId]?.balance || "0";
+      const usdcxRaw = ftData?.fungible_tokens?.[usdcxAssetId]?.balance || "0";
 
-      const sbtcVal  = (sbtcRaw  / 1e8).toFixed(8);
-      const usdcxVal = (usdcxRaw / 1e6).toFixed(2);
+      const sbtcVal  = (Number(sbtcRaw)  / 1e8).toFixed(8);
+      const usdcxVal = (Number(usdcxRaw) / 1e6).toFixed(2);
+
 
       // 2. Fetch on-chain vault deposits via read-only calls
       let vaultStxVal   = "0.00";
