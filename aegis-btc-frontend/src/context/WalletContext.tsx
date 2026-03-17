@@ -299,18 +299,16 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     setNetworkState(newNetwork);
     localStorage.setItem("aegis_network", newNetwork);
     
-    // If user switches to Mainnet, show a toast warning that this is a testnet demo
-    if (newNetwork === "Mainnet") {
-        toast("Note: Protocol features (Deposit/Borrow) are currently optimized for Testnet. Switching to Mainnet is for balance viewing only.", {
-            icon: '⚠️',
-            duration: 6000
-        });
-    }
+    // Toast notification for network switch
+    toast.success(`Switched to ${newNetwork}`, {
+        icon: newNetwork === "Mainnet" ? '💎' : '🧪',
+        duration: 3000
+    });
   }, []);
 
   // ─── Verification ────────────────────────────────────────────────────────
-  // Simple check to see if the contract is likely deployed (STX balance check is a good proxy or just network check)
-  const isContractMissing = network === "Mainnet";
+  // On Mainnet, we don't block anymore. The "Function not found" error will be handles by the deployer check.
+  const isContractMissing = false; 
 
 
   return (
