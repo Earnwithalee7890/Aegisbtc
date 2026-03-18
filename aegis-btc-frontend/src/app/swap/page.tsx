@@ -30,7 +30,7 @@ export default function Swap() {
 
     // Live-ish Price Data (Optimized for 2026/Mainnet context)
     const PRICES = {
-        "STX": 2.62,   // ~$2.62
+        "STX": 0.26,   // ~$0.26 (Updated for March 2026)
         "sBTC": 65420, // ~$65k
         "USDCx": 1.00  // Pegged
     };
