@@ -58,6 +58,7 @@ export default function Borrow() {
             contractName: CONTRACT_NAME,
             functionName: 'borrow-usdcx',
             functionArgs: [uintCV(microUsdcxAmount)],
+            postConditionMode: PostConditionMode.Allow,
             appDetails: { name: 'AegisBTC Real Borrow', icon: window.location.origin + '/favicon.ico' },
             onFinish: () => {
                 toast.success(`USDCx Borrow Broadcasted!`, { icon: '💰' });

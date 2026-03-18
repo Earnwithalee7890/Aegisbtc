@@ -73,7 +73,7 @@ const WalletContext = createContext<WalletContextValue>({
   stacksNetwork: STACKS_MAINNET,
   apiUrl: MAINNET_API,
   contractAddress: "SP2F500B8DTRK1EANJQ054BRAB8DDKN6QCMXGNFBT",
-  contractName: "aegis-unified-protocol",
+  contractName: "aegis-protocol-v1",
   isContractMissing: false,
 });
 
@@ -104,7 +104,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const contractAddress = network === "Mainnet" 
     ? "SP2F500B8DTRK1EANJQ054BRAB8DDKN6QCMXGNFBT" 
     : "ST2F500B8DTRK1EANJQ054BRAB8DDKN6QCQG0J9MJ";
-  const contractName = "aegis-unified-protocol";
+  const contractName = "aegis-protocol-v1";
 
   // ─── Load addresses from session ─────────────────────────────────────────
   const loadAddressFromSession = useCallback(() => {

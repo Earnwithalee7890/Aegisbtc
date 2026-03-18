@@ -75,6 +75,7 @@ export default function Vaults() {
             contractName: CONTRACT_NAME,
             functionName: 'deposit-stx',
             functionArgs: [uintCV(microStxAmount)],
+            postConditionMode: PostConditionMode.Allow,
             appDetails: { name: 'Aegis Vaults', icon: window.location.origin + '/favicon.ico' },
             onFinish: data => {
                 toast.success(`STX Deposit Broadcasted!`, { duration: 5000, icon: '🚀' });
@@ -133,6 +134,7 @@ export default function Vaults() {
             contractName: CONTRACT_NAME,
             functionName: 'faucet-mock-sbtc',
             functionArgs: [],
+            postConditionMode: PostConditionMode.Allow,
             appDetails: { name: 'AegisBTC Faucet', icon: window.location.origin + '/favicon.ico' },
             onFinish: data => {
                 toast.success(`Faucet Broadcasted! 1000 Aegis sBTC incoming.`, { duration: 6000, icon: '🎁' });
