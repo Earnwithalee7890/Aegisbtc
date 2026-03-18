@@ -30,7 +30,7 @@ export default function DeployClient({ contractCode }: { contractCode: string })
 
   const handleDeploy = () => {
     openContractDeploy({
-      contractName: 'aegis-protocol-v1',
+      contractName: 'aegis-unified-protocol',
       codeBody: modifiedContractCode, // Use the modified contract code
       network: stacksNetwork,
       postConditionMode: PostConditionMode.Allow,

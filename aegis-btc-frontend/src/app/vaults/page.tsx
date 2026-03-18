@@ -47,7 +47,7 @@ export default function Vaults() {
 
     const handleContractCheck = () => {
         if (isContractMissing) {
-            toast.error("Aegis v1 Contract not yet detected on-chain. If you just deployed, please wait 1-2 minutes for indexing. Otherwise, visit the Deployment page.", {
+            toast.error("Aegis Contract not yet detected on-chain. If you just deployed, please wait 1-2 minutes for indexing. Otherwise, visit the Deployment page.", {
                 duration: 8000,
                 icon: '⏳'
             });
