@@ -93,6 +93,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const [testnetAddress, setTestnetAddress] = useState("");
   const [balances, setBalances] = useState<WalletBalances>(DEFAULT_BALANCES);
   const [isLoadingBalances, setIsLoadingBalances] = useState(false);
+  const [isContractMissing, setIsContractMissing] = useState(false);
 
   // Derived values
   const address = network === "Mainnet" ? mainnetAddress : testnetAddress;
@@ -200,11 +201,13 @@ export function WalletProvider({ children }: { children: ReactNode }) {
             senderAddress: currentAddress,
           });
           const resJson = cvToJSON(response);
-          // Return the inner value from Clarity response
-          const val = resJson?.value?.value || resJson?.value || "0";
-          return String(val);
-        } catch (e) {
-          console.warn(`[WalletContext] Read-only ${functionName} failed:`, e);
+          return String(resJson?.value?.value || resJson?.value || "0");
+        } catch (e: any) {
+          // If the contract literally doesn't exist yet (not indexed), it often throws here
+          if (e.message?.includes("not found") || e.status === 404) {
+             throw e; // Pass up to refreshBalances to set isContractMissing
+          }
+          console.warn(`[WalletContext] Read-only ${functionName} failed: ${e.message}`);
           return "0";
         }
       };
@@ -223,9 +226,17 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         vaultSbtc: (Number(vSbtcRaw) / 1e8).toFixed(8),
         usdcxDebt: (Number(vDebtRaw) / 1e6).toFixed(2)
       });
+      
+      // If we got here and all vault balances are 0, it MIGHT be missing, 
+      // but we shouldn't be aggressive. We only set it if the read-only calls 
+      // explicitly throw a "contract not found" style error (handled in fetchReadOnly).
+      setIsContractMissing(false);
 
-    } catch (err) {
+    } catch (err: any) {
       console.error("[WalletContext] refreshBalances error:", err);
+      if (err.message?.includes("not found") || err.message?.includes("404")) {
+        setIsContractMissing(true);
+      }
     } finally {
       setIsLoadingBalances(false);
     }
@@ -275,8 +286,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // ─── Verification ────────────────────────────────────────────────────────
-  // On Mainnet, we don't block anymore. The "Function not found" error will be handles by the deployer check.
-  const isContractMissing = false; 
+  
 
 
   return (

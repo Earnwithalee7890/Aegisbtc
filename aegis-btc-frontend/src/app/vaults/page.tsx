@@ -47,9 +47,9 @@ export default function Vaults() {
 
     const handleContractCheck = () => {
         if (isContractMissing) {
-            toast.error("Protocol not deployed on Mainnet. Please switch to Testnet in the Navbar to use Vaults.", {
-                duration: 6000,
-                icon: '⚠️'
+            toast.error("Aegis v1 Contract not yet detected on-chain. If you just deployed, please wait 1-2 minutes for indexing. Otherwise, visit the Deployment page.", {
+                duration: 8000,
+                icon: '⏳'
             });
             return true;
         }
