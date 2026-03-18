@@ -84,7 +84,7 @@ const WalletContext = createContext<WalletContextValue>({
   stacksNetwork: STACKS_MAINNET,
   apiUrl: MAINNET_API,
   contractAddress: "SP2F500B8DTRK1EANJQ054BRAB8DDKN6QCMXGNFBT",
-  contractName: "aegis-protocol-v1",
+  contractName: "aegis-unified-protocol",
   isContractMissing: false,
   supportedFeatures: {
     stxVault: false,
