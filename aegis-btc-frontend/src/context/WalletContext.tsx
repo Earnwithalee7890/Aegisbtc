@@ -10,9 +10,9 @@ import { toast } from "react-hot-toast";
 export const AEGIS_SBTC_SUFFIX = "::aegis-sbtc";
 export const AEGIS_USDCX_SUFFIX = "::aegis-usdcx";
 
-// Mainnet official external assets (for wallet display)
+// Mainnet official validated assets (for wallet display)
 export const MAINNET_SBTC_ASSET = "SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token::sbtc";
-export const MAINNET_USDCX_ASSET = "SP120SBRBQJ00MCWS7TM5R8WJNTTKD5K0HFRC2CNE.usdcx::usdcx";
+export const MAINNET_USDCX_ASSET = "SP3Y2ZQC8H59DNM102N9J9H0X6S9E5S56T26EGBM8.usdc-token::usdc";
 
 // Testnet legacy assets
 export const TESTNET_SBTC_SUFFIX = "::mock-sbtc";
@@ -179,9 +179,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       const stxRaw = stxData?.balance || "0";
       const stxVal = (parseInt(stxRaw) / 1_000_000).toFixed(2);
 
-      // Aegis v3.1 Internal Tokens
-      const sbtcAssetId  = `${currentContract}.${currentContractName}${AEGIS_SBTC_SUFFIX}`;
-      const usdcxAssetId = `${currentContract}.${currentContractName}${AEGIS_USDCX_SUFFIX}`;
+      // Use Official Mainnet Assets for Wallet Balances
+      const sbtcAssetId  = network === "Mainnet" ? MAINNET_SBTC_ASSET : `${currentContract}.${currentContractName}${AEGIS_SBTC_SUFFIX}`;
+      const usdcxAssetId = network === "Mainnet" ? MAINNET_USDCX_ASSET : `${currentContract}.${currentContractName}${AEGIS_USDCX_SUFFIX}`;
 
       const sbtcRaw  = ftData?.fungible_tokens?.[sbtcAssetId]?.balance || "0";
       const usdcxRaw = ftData?.fungible_tokens?.[usdcxAssetId]?.balance || "0";

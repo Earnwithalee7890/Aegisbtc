@@ -16,6 +16,7 @@ export default function Swap() {
         stacksNetwork,
         contractAddress: CONTRACT_ADDRESS,
         contractName: CONTRACT_NAME,
+        isContractMissing,
     } = useWallet();
 
     const [fromToken, setFromToken] = useState("sBTC");
@@ -38,7 +39,19 @@ export default function Swap() {
     // Get live wallet balance based on what is selected
     const walletBalance = fromToken === "sBTC" ? balances.sbtc : fromToken === "STX" ? balances.stx : balances.usdcx;
 
+    const handleContractCheck = () => {
+        if (isContractMissing) {
+            toast.error("Aegis Protocol connection error. Please ensure you are connected to Mainnet.", {
+                duration: 5000,
+                icon: '⚠️'
+            });
+            return true;
+        }
+        return false;
+    };
+
     const handleSwap = async () => {
+        if (handleContractCheck()) return;
         if (!amount || isNaN(Number(amount))) return;
         setIsSwapping(true);
 

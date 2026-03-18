@@ -37,9 +37,9 @@ export default function Borrow() {
 
     const handleContractCheck = () => {
         if (isContractMissing) {
-            toast.error("Aegis Contract not yet detected on-chain. If you just deployed, please wait 1-2 minutes for indexing. Otherwise, visit the Deployment page.", {
-                duration: 8000,
-                icon: '⏳'
+            toast.error("Aegis Protocol connection error. Please ensure you are connected to Mainnet.", {
+                duration: 5000,
+                icon: '⚠️'
             });
             return true;
         }
