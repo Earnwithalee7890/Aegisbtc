@@ -53,7 +53,12 @@ interface WalletContextValue {
     stxVault: boolean;
     sbtcVault: boolean;
     borrowing: boolean;
-    swaps: boolean;
+    swaps: {
+      sbtcToUsdcx: boolean;
+      stxToUsdcx: boolean;
+      usdcxToSbtc: boolean;
+      usdcxToStx: boolean;
+    };
   };
 }
 
@@ -85,7 +90,12 @@ const WalletContext = createContext<WalletContextValue>({
     stxVault: false,
     sbtcVault: false,
     borrowing: false,
-    swaps: false,
+    swaps: {
+      sbtcToUsdcx: false,
+      stxToUsdcx: false,
+      usdcxToSbtc: false,
+      usdcxToStx: false,
+    },
   },
 });
 
@@ -110,7 +120,12 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     stxVault: false,
     sbtcVault: false,
     borrowing: false,
-    swaps: false,
+    swaps: {
+      sbtcToUsdcx: false,
+      stxToUsdcx: false,
+      usdcxToSbtc: false,
+      usdcxToStx: false,
+    },
   });
 
   // Derived values
@@ -263,7 +278,12 @@ export function WalletProvider({ children }: { children: ReactNode }) {
              stxVault: sourceCode.includes("deposit-stx"),
              sbtcVault: sourceCode.includes("deposit-sbtc") || sourceCode.includes("deposit-sBtc"),
              borrowing: sourceCode.includes("borrow-usdcx"),
-             swaps: sourceCode.includes("swap-sbtc-to-usdcx")
+             swaps: {
+               sbtcToUsdcx: sourceCode.includes("swap-sbtc-to-usdcx"),
+               stxToUsdcx:  sourceCode.includes("swap-stx-to-usdcx"),
+               usdcxToSbtc: sourceCode.includes("swap-usdcx-to-sbtc"),
+               usdcxToStx:  sourceCode.includes("swap-usdcx-to-stx"),
+             }
            });
         }
       } catch (e) {
