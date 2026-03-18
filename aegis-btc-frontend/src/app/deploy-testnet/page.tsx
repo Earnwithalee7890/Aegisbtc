@@ -1,6 +1,7 @@
 import DeployClient from './DeployClient';
 
-const CONTRACT_CODE = `;; Aegis Unified Protocol v3.1 (Mainnet Edition)
+const CONTRACT_CODE = `(contract-2.1)
+;; Aegis Unified Protocol v3.1 (Mainnet Edition)
 ;; Optimized for Maximum Stacks Wallet Compatibility
 ;; Purpose: Bitcoin-Backed Synthetic Liquidity & AI Risk Management
 
@@ -42,7 +43,7 @@ const CONTRACT_CODE = `;; Aegis Unified Protocol v3.1 (Mainnet Edition)
     )
     (begin
         (asserts! (> amount u0) ERR_INVALID_AMOUNT)
-        (try! (stx-transfer? amount tx-sender (contract-of .this)))
+        (try! (stx-transfer? amount tx-sender (as-contract tx-sender)))
         (map-set vault-stx-balances tx-sender (+ current-bal amount))
         (ok true))))
 
@@ -69,7 +70,7 @@ const CONTRACT_CODE = `;; Aegis Unified Protocol v3.1 (Mainnet Edition)
 
 (define-public (swap-stx-to-usdcx (amount uint))
     (begin
-        (try! (stx-transfer? amount tx-sender (contract-of .this)))
+        (try! (stx-transfer? amount tx-sender (as-contract tx-sender)))
         ;; Demo: 1 STX = 2.5 USDCx
         (try! (ft-mint? aegis-usdcx (/ (* amount u25) u10) tx-sender))
         (ok true)))
