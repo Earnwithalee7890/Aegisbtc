@@ -17,6 +17,7 @@ export default function Borrow() {
         contractAddress: CONTRACT_ADDRESS,
         contractName: CONTRACT_NAME,
         isContractMissing,
+        supportedFeatures
     } = useWallet();
 
     const walletSbtc  = balances.sbtc;
@@ -192,7 +193,7 @@ export default function Borrow() {
                                 className="py-4 rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white font-bold text-lg hover:shadow-[0_0_20px_rgba(249,115,22,0.3)] transition-all flex justify-center items-center gap-2 disabled:opacity-50"
                             >
                                 {isBorrowing ? <Activity className="w-5 h-5 animate-pulse" /> : <Zap className="w-5 h-5" />}
-                                {isBorrowing ? "Borrowing..." : "Borrow USDCx"}
+                                {!supportedFeatures.borrowing ? "Unsupported Version" : isBorrowing ? "Borrowing..." : "Borrow USDCx"}
                             </button>
                             <button
                                 onClick={handleRepay}

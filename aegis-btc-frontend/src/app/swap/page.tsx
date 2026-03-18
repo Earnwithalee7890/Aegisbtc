@@ -17,6 +17,7 @@ export default function Swap() {
         contractAddress: CONTRACT_ADDRESS,
         contractName: CONTRACT_NAME,
         isContractMissing,
+        supportedFeatures
     } = useWallet();
 
     const [fromToken, setFromToken] = useState("sBTC");
@@ -174,11 +175,11 @@ export default function Swap() {
 
                     <button
                         onClick={handleSwap}
-                        disabled={isSwapping || !amount || Number(amount) <= 0}
+                        disabled={isSwapping || !amount || Number(amount) <= 0 || !supportedFeatures.swaps}
                         className="w-full mt-8 py-4 rounded-2xl bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white font-bold text-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2 group shadow-lg shadow-primary-500/10"
                     >
                         {isSwapping ? <Activity className="w-5 h-5 animate-pulse" /> : <Zap className="w-5 h-5 group-hover:scale-110 transition-transform" />}
-                        {isSwapping ? "Confirming..." : "Swap Tokens"}
+                        {!supportedFeatures.swaps ? "Swaps Coming in v3.2" : isSwapping ? "Confirming..." : "Swap Tokens"}
                     </button>
                 </div>
 

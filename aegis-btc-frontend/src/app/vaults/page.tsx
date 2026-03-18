@@ -1,15 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { userSession } from "@/components/layout/Navbar";
 import { useWallet } from "@/context/WalletContext";
 import { motion } from "framer-motion";
-import { Vault, ArrowUpRight, ArrowDownRight, Activity, Zap, Sparkles, Calculator } from "lucide-react";
+import { Vault, ArrowUpRight, ArrowDownRight, Activity, Zap, Sparkles, Calculator, TrendingUp, Coins } from "lucide-react";
 import { openContractCall } from '@stacks/connect';
-import {
-    uintCV,
-    PostConditionMode,
-} from '@stacks/transactions';
+import { uintCV, PostConditionMode } from '@stacks/transactions';
 import { toast } from 'react-hot-toast';
 
 export default function Vaults() {
@@ -23,6 +19,7 @@ export default function Vaults() {
         contractAddress: CONTRACT_ADDRESS,
         contractName: CONTRACT_NAME,
         isContractMissing,
+        supportedFeatures
     } = useWallet();
 
     const [depositAmountStx, setDepositAmountStx] = useState("");
@@ -31,19 +28,16 @@ export default function Vaults() {
     const [isDepositingSbtc, setIsDepositingSbtc] = useState(false);
     const [isMinting, setIsMinting] = useState(false);
     const [isWithdrawingStx, setIsWithdrawingStx] = useState(false);
-    const [isWithdrawingSbtc, setIsWithdrawingSbtc] = useState(false);
     const [calcAmount, setCalcAmount] = useState("");
 
     const avgApy = 0.084;
     const estDaily = (parseFloat(calcAmount) || 0) * (avgApy / 365);
     const estYearly = (parseFloat(calcAmount) || 0) * avgApy;
 
-    // Convenience aliases from shared balances
-    const walletStx   = balances.stx;
-    const walletSbtc  = balances.sbtc;
-    const vaultStx    = balances.vaultStx;
-    const vaultSbtc   = balances.vaultSbtc;
-    const isLoadingBalance = isLoadingBalances;
+    const walletStx = balances.stx;
+    const walletSbtc = balances.sbtc;
+    const vaultStx = balances.vaultStx;
+    const vaultSbtc = balances.vaultSbtc;
 
     const handleContractCheck = () => {
         if (isContractMissing) {
@@ -63,12 +57,6 @@ export default function Vaults() {
 
         const microStxAmount = Math.floor(Number(depositAmountStx) * 1000000);
 
-        if (!isConnected || !address) {
-            toast.error("Connect your wallet");
-            setIsDepositingStx(false);
-            return;
-        }
-
         openContractCall({
             network: stacksNetwork,
             contractAddress: CONTRACT_ADDRESS,
@@ -77,53 +65,39 @@ export default function Vaults() {
             functionArgs: [uintCV(microStxAmount)],
             postConditionMode: PostConditionMode.Allow,
             appDetails: { name: 'Aegis Vaults', icon: window.location.origin + '/favicon.ico' },
-            onFinish: data => {
-                toast.success(`STX Deposit Broadcasted!`, { duration: 5000, icon: '🚀' });
+            onFinish: () => {
+                toast.success(`STX Deposit Broadcasted!`, { icon: '🚀' });
                 setIsDepositingStx(false);
                 setDepositAmountStx("");
                 setTimeout(() => refreshBalances(), 4000);
             },
-            onCancel: () => { setIsDepositingStx(false); }
+            onCancel: () => setIsDepositingStx(false)
         });
     };
 
     const handleDepositSbtc = async () => {
         if (handleContractCheck()) return;
-        if (!depositAmountSbtc || isNaN(Number(depositAmountSbtc))) {
-            toast.error("Please enter a valid amount");
-            return;
-        }
+        if (!depositAmountSbtc || isNaN(Number(depositAmountSbtc))) return;
+        setIsDepositingSbtc(true);
 
-        try {
-            if (!isConnected || !address) {
-                toast.error("Could not find Stacks address. Please re-sign in.");
-                return;
-            }
+        const microSbtcAmount = Math.floor(Number(depositAmountSbtc) * 100000000);
 
-            setIsDepositingSbtc(true);
-            const microSbtcAmount = Math.floor(Number(depositAmountSbtc) * 100000000);
-
-            openContractCall({
-                network: stacksNetwork,
-                contractAddress: CONTRACT_ADDRESS,
-                contractName: CONTRACT_NAME,
-                functionName: 'deposit-sbtc',
-                functionArgs: [uintCV(microSbtcAmount)],
-                postConditionMode: PostConditionMode.Allow,
-                appDetails: { name: 'AegisBTC Real Vaults', icon: window.location.origin + '/favicon.ico' },
-                onFinish: () => {
-                    toast.success(`sBTC Deposit Broadcasted!`, { icon: '🧡' });
-                    setIsDepositingSbtc(false);
-                    setDepositAmountSbtc("");
-                    setTimeout(() => refreshBalances(), 4000);
-                },
-                onCancel: () => { setIsDepositingSbtc(false); }
-            });
-        } catch (error: any) {
-            console.error("sBTC Deposit Error:", error);
-            toast.error(`Error: ${error.message || "Could not initiate transaction"}`);
-            setIsDepositingSbtc(false);
-        }
+        openContractCall({
+            network: stacksNetwork,
+            contractAddress: CONTRACT_ADDRESS,
+            contractName: CONTRACT_NAME,
+            functionName: 'deposit-sbtc',
+            functionArgs: [uintCV(microSbtcAmount)],
+            postConditionMode: PostConditionMode.Allow,
+            appDetails: { name: 'Aegis Vaults', icon: window.location.origin + '/favicon.ico' },
+            onFinish: () => {
+                toast.success(`sBTC Deposit Broadcasted!`, { icon: '🧡' });
+                setIsDepositingSbtc(false);
+                setDepositAmountSbtc("");
+                setTimeout(() => refreshBalances(), 4000);
+            },
+            onCancel: () => setIsDepositingSbtc(false)
+        });
     };
 
     const handleFaucet = async () => {
@@ -136,311 +110,273 @@ export default function Vaults() {
             functionName: 'faucet-mock-sbtc',
             functionArgs: [],
             postConditionMode: PostConditionMode.Allow,
-            appDetails: { name: 'AegisBTC Faucet', icon: window.location.origin + '/favicon.ico' },
-            onFinish: data => {
-                toast.success(`Faucet Broadcasted! 1000 Aegis sBTC incoming.`, { duration: 6000, icon: '🎁' });
+            appDetails: { name: 'Aegis Faucet', icon: window.location.origin + '/favicon.ico' },
+            onFinish: () => {
+                toast.success(`Faucet Broadcasted!`, { icon: '🎁' });
                 setIsMinting(false);
                 setTimeout(() => refreshBalances(), 4000);
             },
-            onCancel: () => { setIsMinting(false); }
+            onCancel: () => setIsMinting(false)
         });
     };
 
     const handleWithdrawStx = async () => {
-        if (!depositAmountStx || isNaN(Number(depositAmountStx))) return;
-        setIsWithdrawingStx(true);
-        const microStxAmount = Math.floor(Number(depositAmountStx) * 1000000);
-        openContractCall({
-            network: stacksNetwork,
-            contractAddress: CONTRACT_ADDRESS,
-            contractName: CONTRACT_NAME,
-            functionName: 'withdraw-stx',
-            functionArgs: [uintCV(microStxAmount)],
-            appDetails: { name: 'AegisBTC Real Vaults', icon: window.location.origin + '/favicon.ico' },
-            onFinish: () => { toast.success(`STX Withdrawal Broadcasted!`, { icon: '💸' }); setIsWithdrawingStx(false); setDepositAmountStx(""); setTimeout(() => refreshBalances(), 4000); },
-            onCancel: () => setIsWithdrawingStx(false)
-        });
+        toast.error("Withdrawals coming in Aegis v3.2!");
     };
 
     const handleWithdrawSbtc = async () => {
-        toast.error("Wait for Aegis v3.2 for one-click withdrawals. Your assets are SAFU in the Vault!");
+        toast.error("Withdrawals coming in Aegis v3.2!");
     };
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
                 <div>
-                    <h1 className="text-3xl font-bold text-white tracking-tight mb-2">sBTC Vaults</h1>
-                    <p className="text-surface-400">Lock your sBTC to automatically generate yield through Proof of Transfer.</p>
+                    <h1 className="text-3xl font-bold text-white tracking-tight mb-2">Aegis Vaults</h1>
+                    <p className="text-surface-400">Lock your assets to generate yield through automated strategies.</p>
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <div className="glass-panel px-6 py-3 rounded-2xl border-primary-500/20">
-                        <p className="text-sm text-surface-400 mb-1">Total Platform TVL</p>
-                        <p className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-accent-400">
-                            142.5 sBTC
-                        </p>
-                    </div>
-                    <div className="glass-panel px-6 py-3 rounded-2xl border-accent-500/20">
-                        <p className="text-sm text-surface-400 mb-1">Avg. APY</p>
-                        <p className="text-2xl font-bold text-accent-400">
-                            8.4%
-                        </p>
+                    <div className="glass-panel px-6 py-3 rounded-2xl border border-white/10">
+                        <p className="text-sm text-surface-400 mb-1">Platform TVL</p>
+                        <p className="text-xl font-bold text-primary-400">$12.4M</p>
                     </div>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Vaults List */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="lg:col-span-2 space-y-8"
-                >
+                <div className="lg:col-span-2 space-y-8">
                     {/* STX Vault */}
-                    <div className="glass-panel p-8 rounded-3xl relative overflow-hidden">
-                        <div className="flex items-center justify-between mb-8">
-                            <div className="flex items-center gap-4">
-                                <div className="w-14 h-14 bg-gradient-to-br from-primary-500/20 to-primary-600/20 rounded-2xl flex items-center justify-center border border-primary-500/30">
-                                    <Vault className="w-7 h-7 text-primary-400" />
+                    {supportedFeatures.stxVault ? (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="glass-panel p-8 rounded-3xl relative overflow-hidden group"
+                        >
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/10 blur-3xl -mr-16 -mt-16 group-hover:bg-primary-500/20 transition-colors" />
+                            <div className="flex items-center justify-between mb-8">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 bg-primary-500/20 rounded-2xl">
+                                        <Zap className="w-6 h-6 text-primary-400" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-bold text-white">STX Vault</h3>
+                                        <p className="text-sm text-surface-400">Lock native STX for yield</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h2 className="text-2xl font-bold text-white">Aegis STX Vault</h2>
-                                    <p className="text-primary-400 text-sm font-medium">Auto-compounding STX Yield</p>
+                                <div className="text-right">
+                                    <p className="text-sm text-surface-500 mb-1">Staked</p>
+                                    <p className="text-2xl font-bold text-white font-mono">{vaultStx} STX</p>
                                 </div>
                             </div>
 
-                            <div className="text-right">
-                                <p className="text-sm text-surface-400 mb-1">Your Staked Balance</p>
-                                <p className="text-2xl font-bold text-white">{vaultStx} <span className="text-surface-500 text-lg">STX</span></p>
+                            <div className="bg-surface-950/50 border border-white/5 rounded-2xl p-6 mb-8">
+                                <div className="flex justify-between text-xs text-surface-400 mb-4 uppercase tracking-wider">
+                                    <span>Amount</span>
+                                    <span>Wallet: {isLoadingBalances ? "..." : `${walletStx} STX`}</span>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <input
+                                        type="number"
+                                        value={depositAmountStx}
+                                        onChange={(e) => setDepositAmountStx(e.target.value)}
+                                        placeholder="0.0"
+                                        className="w-full bg-transparent text-3xl font-bold text-white focus:outline-none placeholder:text-surface-700 font-mono"
+                                    />
+                                    <button 
+                                        onClick={() => setDepositAmountStx(walletStx)}
+                                        className="text-xs font-bold text-primary-400 hover:text-primary-300 transition-colors"
+                                    >
+                                        MAX
+                                    </button>
+                                </div>
                             </div>
-                        </div>
 
-                        <div className="bg-surface-950/50 border border-white/5 rounded-2xl p-6 mb-8">
-                            <div className="flex justify-between text-sm mb-4">
-                                <span className="text-surface-400 text-sm font-medium uppercase tracking-wider">Amount</span>
-                                <span className="text-surface-400">Wallet: {isLoadingBalance ? <span className="text-white animate-pulse">Loading...</span> : <span className="text-white font-medium">{walletStx} STX</span>}</span>
-                            </div>
-                            <div className="flex items-center gap-4">
-                                <input
-                                    type="text"
-                                    value={depositAmountStx}
-                                    onChange={(e) => setDepositAmountStx(e.target.value)}
-                                    placeholder="0.0"
-                                    className="w-full bg-transparent text-4xl font-bold text-white focus:outline-none placeholder:text-surface-700 font-mono"
-                                />
+                            <div className="grid grid-cols-2 gap-4">
                                 <button
-                                    onClick={() => setDepositAmountStx(walletStx)}
-                                    className="px-4 py-2 bg-primary-500/10 hover:bg-primary-500/20 text-primary-400 rounded-xl text-sm font-medium transition-colors"
+                                    onClick={handleDepositStx}
+                                    disabled={isDepositingStx || !depositAmountStx}
+                                    className="py-4 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 group"
                                 >
-                                    MAX
+                                    {isDepositingStx ? <Activity className="w-5 h-5 animate-pulse" /> : <TrendingUp className="w-5 h-5 group-hover:scale-110 transition-transform" />}
+                                    Deposit
+                                </button>
+                                <button
+                                    onClick={handleWithdrawStx}
+                                    className="py-4 rounded-xl bg-surface-800 hover:bg-surface-700 text-white font-bold transition-all"
+                                >
+                                    Withdraw
                                 </button>
                             </div>
+                        </motion.div>
+                    ) : (
+                        <div className="glass-panel p-8 rounded-3xl border border-white/5 opacity-50 relative group">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-surface-800 rounded-2xl">
+                                    <Zap className="w-6 h-6 text-surface-500" />
+                                </div>
+                                <div className="flex-1">
+                                    <div className="flex justify-between items-center">
+                                        <h3 className="text-xl font-bold text-surface-400">STX Vault</h3>
+                                        <span className="text-[10px] bg-surface-800 text-surface-500 px-2 py-0.5 rounded font-bold uppercase tracking-widest">Coming Soon</span>
+                                    </div>
+                                    <p className="text-sm text-surface-500">Not supported by current protocol version</p>
+                                </div>
+                            </div>
                         </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <button
-                                onClick={handleDepositStx}
-                                disabled={isDepositingStx || !depositAmountStx}
-                                className="py-4 rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white font-bold text-lg box-glow transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                            >
-                                {isDepositingStx ? <Activity className="w-5 h-5 animate-pulse" /> : <Zap className="w-5 h-5" />}
-                                {isDepositingStx ? "Depositing..." : "Deposit STX"}
-                            </button>
-                            <button
-                                onClick={handleWithdrawStx}
-                                disabled={isWithdrawingStx || !depositAmountStx}
-                                className="py-4 rounded-xl bg-surface-800 hover:bg-surface-700 text-white font-bold text-lg border border-white/5 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                            >
-                                {isWithdrawingStx ? <Activity className="w-5 h-5 animate-pulse" /> : <ArrowDownRight className="w-5 h-5" />}
-                                {isWithdrawingStx ? "Withdrawing..." : "Withdraw"}
-                            </button>
-                        </div>
-                    </div>
+                    )}
 
                     {/* sBTC Vault */}
-                    <div className="glass-panel p-8 rounded-3xl relative overflow-hidden border border-accent-500/20">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-accent-500/5 blur-[80px] rounded-full pointer-events-none" />
-
-                        <div className="flex items-center justify-between mb-8">
-                            <div className="flex items-center gap-4">
-                                <div className="w-14 h-14 bg-gradient-to-br from-accent-500/20 to-orange-500/20 rounded-2xl flex items-center justify-center border border-accent-500/30">
-                                    <Vault className="w-7 h-7 text-accent-400" />
+                    {supportedFeatures.sbtcVault ? (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="glass-panel p-8 rounded-3xl relative overflow-hidden group border border-orange-500/20"
+                        >
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 blur-3xl -mr-16 -mt-16 group-hover:bg-orange-500/20 transition-colors" />
+                            <div className="flex items-center justify-between mb-8">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 bg-orange-500/20 rounded-2xl">
+                                        <Coins className="w-6 h-6 text-orange-400" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-bold text-white">sBTC Vault</h3>
+                                        <p className="text-sm text-surface-400">Bitcoin-backed yield strategy</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h2 className="text-2xl font-bold text-white">Aegis sBTC Vault</h2>
-                                    <p className="text-accent-400 text-sm font-medium">Decentralized Bitcoin Yield</p>
+                                <div className="text-right">
+                                    <p className="text-sm text-surface-500 mb-1">Staked</p>
+                                    <p className="text-2xl font-bold text-white font-mono">{vaultSbtc} sBTC</p>
                                 </div>
                             </div>
 
-                            <div className="text-right">
-                                <p className="text-sm text-surface-400 mb-1">Your Vault Balance</p>
-                                <p className="text-2xl font-bold text-white">{vaultSbtc} <span className="text-surface-500 text-lg">sBTC</span></p>
+                            <div className="bg-surface-950/50 border border-white/5 rounded-2xl p-6 mb-8">
+                                <div className="flex justify-between text-xs text-surface-400 mb-4 uppercase tracking-wider">
+                                    <span>Amount</span>
+                                    <span>Wallet: {isLoadingBalances ? "..." : `${walletSbtc} sBTC`}</span>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <input
+                                        type="number"
+                                        value={depositAmountSbtc}
+                                        onChange={(e) => setDepositAmountSbtc(e.target.value)}
+                                        placeholder="0.0"
+                                        className="w-full bg-transparent text-3xl font-bold text-white focus:outline-none placeholder:text-surface-700 font-mono"
+                                    />
+                                    <button 
+                                        onClick={() => setDepositAmountSbtc(walletSbtc)}
+                                        className="text-xs font-bold text-orange-400 hover:text-orange-300 transition-colors"
+                                    >
+                                        MAX
+                                    </button>
+                                </div>
                             </div>
-                        </div>
 
-                        <div className="bg-surface-950/50 border border-white/5 rounded-2xl p-6 mb-8">
-                            <div className="flex justify-between text-sm mb-4">
-                                <span className="text-surface-400 text-sm font-medium uppercase tracking-wider">Amount sBTC</span>
-                                <span className="text-surface-400">Wallet: {isLoadingBalance ? <span className="text-white animate-pulse">Loading...</span> : <span className="text-white font-medium">{walletSbtc} sBTC</span>}</span>
-                            </div>
-                            <div className="flex items-center gap-4">
-                                <input
-                                    type="text"
-                                    value={depositAmountSbtc}
-                                    onChange={(e) => setDepositAmountSbtc(e.target.value)}
-                                    placeholder="0.0"
-                                    className="w-full bg-transparent text-4xl font-bold text-white focus:outline-none placeholder:text-surface-700 font-mono"
-                                />
+                            <div className="grid grid-cols-2 gap-4">
                                 <button
-                                    onClick={() => setDepositAmountSbtc(walletSbtc)}
-                                    className="px-4 py-2 bg-accent-500/10 hover:bg-accent-500/20 text-accent-400 rounded-xl text-sm font-medium transition-colors"
+                                    onClick={handleDepositSbtc}
+                                    disabled={isDepositingSbtc || !depositAmountSbtc}
+                                    className="py-4 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 group"
                                 >
-                                    MAX
+                                    {isDepositingSbtc ? <Activity className="w-5 h-5 animate-pulse" /> : <TrendingUp className="w-5 h-5 group-hover:scale-110 transition-transform" />}
+                                    Deposit
+                                </button>
+                                <button
+                                    onClick={handleWithdrawSbtc}
+                                    className="py-4 rounded-xl bg-surface-800 hover:bg-surface-700 text-white font-bold transition-all"
+                                >
+                                    Withdraw
                                 </button>
                             </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <button
-                                onClick={handleDepositSbtc}
-                                disabled={isDepositingSbtc || !depositAmountSbtc}
-                                className="py-4 rounded-xl bg-gradient-to-r from-accent-600 to-orange-500 hover:from-accent-500 hover:to-orange-400 text-white font-bold text-lg shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                            >
-                                {isDepositingSbtc ? <Activity className="w-5 h-5 animate-pulse" /> : <Zap className="w-5 h-5" />}
-                                {isDepositingSbtc ? "Depositing..." : "Deposit sBTC"}
-                            </button>
-                            <button
-                                onClick={handleWithdrawSbtc}
-                                disabled={isWithdrawingSbtc || !depositAmountSbtc}
-                                className="py-4 rounded-xl bg-surface-800 hover:bg-surface-700 text-white font-bold text-lg border border-white/5 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                            >
-                                {isWithdrawingSbtc ? <Activity className="w-5 h-5 animate-pulse" /> : <ArrowDownRight className="w-5 h-5" />}
-                                {isWithdrawingSbtc ? "Withdrawing..." : "Withdraw"}
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Aegis Faucet Vault */}
-                    <div className="glass-panel p-8 rounded-3xl relative overflow-hidden border border-primary-500/20 bg-gradient-to-br from-primary-500/5 to-transparent">
-                                <div className="flex justify-between items-center p-3 bg-surface-900 rounded-xl border border-white/5 opacity-50">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center text-xs text-white font-bold">S</div>
-                                        <span className="text-white font-medium">STX Vault (Legacy)</span>
-                                    </div>
-                                    <span className="text-white font-mono font-bold">0.00 STX</span>
-                                </div>
-                        <div className="flex items-center justify-between">
+                        </motion.div>
+                    ) : (
+                        <div className="glass-panel p-8 rounded-3xl border border-white/5 opacity-50 relative group">
                             <div className="flex items-center gap-4">
-                                <div className="w-14 h-14 bg-primary-500/20 rounded-2xl flex items-center justify-center border border-primary-500/30">
-                                    <Zap className="w-7 h-7 text-primary-400" />
+                                <div className="p-3 bg-surface-800 rounded-2xl">
+                                    <Coins className="w-6 h-6 text-surface-500" />
                                 </div>
-                                <div>
-                                    <h2 className="text-2xl font-bold text-white">Aegis Faucet</h2>
-                                    <p className="text-primary-400 text-sm font-medium">Get Mock Assets for Testing</p>
+                                <div className="flex-1">
+                                    <div className="flex justify-between items-center">
+                                        <h3 className="text-xl font-bold text-surface-400">sBTC Vault</h3>
+                                        <span className="text-[10px] bg-surface-800 text-surface-500 px-2 py-0.5 rounded font-bold uppercase tracking-widest">Unavailable</span>
+                                    </div>
+                                    <p className="text-sm text-surface-500">Feature not indexed in current deployment</p>
                                 </div>
                             </div>
                         </div>
+                    )}
 
-                        <div className="mt-8 p-6 bg-surface-950/50 border border-white/5 rounded-2xl">
-                            <p className="text-surface-400 text-sm leading-relaxed">
-                                Need assets to test the vaults? The Aegis Faucet mints <span className="text-white font-bold">1000 Aegis sBTC</span> directly to your testnet wallet instantly.
-                            </p>
-                        </div>
-
-                        <button
-                            onClick={handleFaucet}
-                            disabled={isMinting}
-                            className="w-full mt-6 py-4 rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white font-bold text-lg box-glow transition-all flex items-center justify-center gap-2"
+                    {/* Faucet Box (Only for Testnet) */}
+                    {stacksNetwork.chainId === 2147483648 && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="p-6 bg-gradient-to-r from-primary-500/10 to-transparent border border-white/5 rounded-3xl flex items-center justify-between gap-6"
                         >
-                            {isMinting ? <Activity className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-                            {isMinting ? "Minting Test Assets..." : "Mint 1000 Aegis sBTC"}
-                        </button>
-                    </div>
-                </motion.div>
-
-                {/* Stats Column */}
-                <div className="space-y-6">
-                    <motion.div
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.1 }}
-                        className="glass-panel p-6 rounded-3xl"
-                    >
-                        <h3 className="text-lg font-semibold text-white mb-6">Vault Strategy</h3>
-
-                        <div className="space-y-6">
-                            <div className="flex items-start gap-4">
-                                <div className="p-2 bg-green-500/10 rounded-lg shrink-0">
-                                    <ArrowUpRight className="w-5 h-5 text-green-400" />
-                                </div>
-                                <div>
-                                    <h4 className="text-sm font-medium text-white mb-1">PoX Stacking</h4>
-                                    <p className="text-xs text-surface-400 leading-relaxed">Your sBTC is routed to validators participating in Proof of Transfer, earning native STX yield.</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-start gap-4">
-                                <div className="p-2 bg-accent-500/10 rounded-lg shrink-0">
-                                    <Activity className="w-5 h-5 text-accent-400" />
-                                </div>
-                                <div>
-                                    <h4 className="text-sm font-medium text-white mb-1">Auto-Compound</h4>
-                                    <p className="text-xs text-surface-400 leading-relaxed">Yield is automatically converted back to sBTC and reinvested twice a day.</p>
-                                </div>
-                            </div>
-
-                            <div className="pt-4 border-t border-white/5">
-                                <div className="flex justify-between items-center text-sm">
-                                    <span className="text-surface-400">Risk Level</span>
-                                    <span className="text-primary-400 bg-primary-400/10 px-2 py-1 rounded font-medium">Low</span>
-                                </div>
-                            </div>
-                        </div>
-                    </motion.div>
-
-                    <motion.div
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.2 }}
-                        className="glass-panel p-6 rounded-3xl border border-primary-500/20"
-                    >
-                        <div className="flex items-center gap-2 mb-6">
-                            <Calculator className="w-5 h-5 text-primary-400" />
-                            <h3 className="text-lg font-semibold text-white">Yield Calculator</h3>
-                        </div>
-
-                        <div className="space-y-4">
                             <div>
-                                <label className="text-xs text-surface-400 uppercase tracking-wider font-bold mb-2 block">Investment Amount</label>
-                                <div className="relative">
-                                    <input 
-                                        type="number" 
-                                        value={calcAmount}
-                                        onChange={(e) => setCalcAmount(e.target.value)}
-                                        placeholder="0.00"
-                                        className="w-full bg-surface-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary-500/50 transition-colors"
-                                    />
-                                    <span className="absolute right-4 top-3 text-surface-500 font-bold">sBTC</span>
-                                </div>
+                                <h4 className="text-white font-bold mb-1 flex items-center gap-2">
+                                    <Sparkles className="w-4 h-4 text-primary-400" />
+                                    Testnet Faucet
+                                </h4>
+                                <p className="text-xs text-surface-500">Need mock sBTC for testing? Use our instant faucet.</p>
                             </div>
+                            <button
+                                onClick={handleFaucet}
+                                disabled={isMinting}
+                                className="px-6 py-2.5 bg-primary-500 hover:bg-primary-400 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-50"
+                            >
+                                {isMinting ? "Minting..." : "Mint sBTC"}
+                            </button>
+                        </motion.div>
+                    )}
+                </div>
 
-                            <div className="bg-primary-500/5 rounded-2xl p-4 space-y-3">
-                                <div className="flex justify-between items-center text-sm">
-                                    <span className="text-surface-400">Daily Est.</span>
-                                    <span className="text-white font-mono">{estDaily.toFixed(6)} sBTC</span>
-                                </div>
-                                <div className="flex justify-between items-center text-sm">
-                                    <span className="text-surface-400">Yearly Est.</span>
-                                    <span className="text-primary-400 font-bold font-mono">{estYearly.toFixed(4)} sBTC</span>
-                                </div>
+                <div className="space-y-6">
+                    <div className="glass-panel p-6 rounded-3xl border border-white/10">
+                        <h4 className="text-white font-bold mb-4 flex items-center gap-2">
+                            <Activity className="w-4 h-4 text-primary-400" />
+                            Reward Distribution
+                        </h4>
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-surface-400">Next Payout</span>
+                                <span className="text-white font-mono">2h 14m</span>
                             </div>
-
-                            <p className="text-[10px] text-surface-500 italic">
-                                * Estimates based on current average APY of 8.4%. Actual yields may vary.
-                            </p>
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-surface-400">Estimated Yield</span>
+                                <span className="text-primary-400 font-bold font-mono">+8.42% APY</span>
+                            </div>
                         </div>
-                    </motion.div>
+                    </div>
+
+                    <div className="glass-panel p-6 rounded-3xl border border-white/10">
+                        <h4 className="text-white font-bold mb-4 flex items-center gap-2">
+                            <Calculator className="w-4 h-4 text-accent-400" />
+                            Yield Estimator
+                        </h4>
+                        <div className="space-y-4">
+                            <div className="relative">
+                                <input
+                                    type="number"
+                                    value={calcAmount}
+                                    onChange={(e) => setCalcAmount(e.target.value)}
+                                    placeholder="Amount..."
+                                    className="w-full bg-surface-950 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-accent-500/50"
+                                />
+                                <span className="absolute right-3 top-2 text-[10px] text-surface-500 font-bold uppercase">USD</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 text-center">
+                                <div className="p-2 bg-surface-900 rounded-lg">
+                                    <p className="text-[10px] text-surface-500 uppercase">Daily</p>
+                                    <p className="text-xs text-white font-bold">${estDaily.toFixed(2)}</p>
+                                </div>
+                                <div className="p-2 bg-surface-900 rounded-lg">
+                                    <p className="text-[10px] text-surface-500 uppercase">Yearly</p>
+                                    <p className="text-xs text-white font-bold">${estYearly.toFixed(2)}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

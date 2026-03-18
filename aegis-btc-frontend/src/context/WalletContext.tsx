@@ -49,6 +49,12 @@ interface WalletContextValue {
   contractAddress: string;
   contractName: string;
   isContractMissing: boolean;
+  supportedFeatures: {
+    stxVault: boolean;
+    sbtcVault: boolean;
+    borrowing: boolean;
+    swaps: boolean;
+  };
 }
 
 const DEFAULT_BALANCES: WalletBalances = {
@@ -75,6 +81,12 @@ const WalletContext = createContext<WalletContextValue>({
   contractAddress: "SP2F500B8DTRK1EANJQ054BRAB8DDKN6QCMXGNFBT",
   contractName: "aegis-protocol-v1",
   isContractMissing: false,
+  supportedFeatures: {
+    stxVault: false,
+    sbtcVault: false,
+    borrowing: false,
+    swaps: false,
+  },
 });
 
 export function WalletProvider({ children }: { children: ReactNode }) {
@@ -94,6 +106,12 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const [balances, setBalances] = useState<WalletBalances>(DEFAULT_BALANCES);
   const [isLoadingBalances, setIsLoadingBalances] = useState(false);
   const [isContractMissing, setIsContractMissing] = useState(false);
+  const [supportedFeatures, setSupportedFeatures] = useState({
+    stxVault: false,
+    sbtcVault: false,
+    borrowing: false,
+    swaps: false,
+  });
 
   // Derived values
   const address = network === "Mainnet" ? mainnetAddress : testnetAddress;
@@ -167,6 +185,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     const currentNetwork = network === "Mainnet" ? STACKS_MAINNET : STACKS_TESTNET;
     const currentContract = contractAddress;
     const currentContractName = contractName;
+    const contractId = `${currentContract}.${currentContractName}`;
 
     try {
       // 1. Fetch wallet token balances from Hiro API
@@ -231,6 +250,25 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       // but we shouldn't be aggressive. We only set it if the read-only calls 
       // explicitly throw a "contract not found" style error (handled in fetchReadOnly).
       setIsContractMissing(false);
+
+      // 3. Detect Supported Features (Check if specific functions exist in contract)
+      // We do this once or every refresh to ensure UI stays synced
+      try {
+        const contractRes = await fetch(`${currentApiUrl}/extended/v1/contract/${contractId}`);
+        if (contractRes.ok) {
+           const contractData = await contractRes.json();
+           const sourceCode = contractData.source_code || "";
+           
+           setSupportedFeatures({
+             stxVault: sourceCode.includes("deposit-stx"),
+             sbtcVault: sourceCode.includes("deposit-sbtc") || sourceCode.includes("deposit-sBtc"),
+             borrowing: sourceCode.includes("borrow-usdcx"),
+             swaps: sourceCode.includes("swap-sbtc-to-usdcx")
+           });
+        }
+      } catch (e) {
+        console.warn("[WalletContext] Feature detection failed:", e);
+      }
 
     } catch (err: any) {
       console.error("[WalletContext] refreshBalances error:", err);
@@ -306,6 +344,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         contractAddress,
         contractName,
         isContractMissing,
+        supportedFeatures,
       }}
     >
       {children}
