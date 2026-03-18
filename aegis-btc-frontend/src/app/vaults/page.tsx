@@ -109,6 +109,7 @@ export default function Vaults() {
                 contractName: CONTRACT_NAME,
                 functionName: 'deposit-sbtc',
                 functionArgs: [uintCV(microSbtcAmount)],
+                postConditionMode: PostConditionMode.Allow,
                 appDetails: { name: 'AegisBTC Real Vaults', icon: window.location.origin + '/favicon.ico' },
                 onFinish: () => {
                     toast.success(`sBTC Deposit Broadcasted!`, { icon: '🧡' });

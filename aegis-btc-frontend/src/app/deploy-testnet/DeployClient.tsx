@@ -1,6 +1,7 @@
 "use client";
 
 import { openContractDeploy } from '@stacks/connect';
+import { PostConditionMode } from '@stacks/transactions';
 import { useWallet } from '@/context/WalletContext';
 import { toast } from 'react-hot-toast';
 
@@ -29,9 +30,10 @@ export default function DeployClient({ contractCode }: { contractCode: string })
 
   const handleDeploy = () => {
     openContractDeploy({
-      contractName: 'aegis-unified-protocol',
+      contractName: 'aegis-protocol-v1',
       codeBody: modifiedContractCode, // Use the modified contract code
       network: stacksNetwork,
+      postConditionMode: PostConditionMode.Allow,
       appDetails: {
         name: 'Aegis Protocol Deployer',
         icon: window.location.origin + '/favicon.ico',
