@@ -33,7 +33,6 @@ export default function DeployClient({ contractCode }: { contractCode: string })
       contractName: 'aegis-unified-protocol',
       codeBody: modifiedContractCode, // Use the modified contract code
       network: stacksNetwork,
-      postConditionMode: PostConditionMode.Allow,
       appDetails: {
         name: 'Aegis Protocol Deployer',
         icon: window.location.origin + '/favicon.ico',

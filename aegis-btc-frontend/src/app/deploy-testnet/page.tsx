@@ -1,6 +1,7 @@
 import DeployClient from './DeployClient';
 
-const CONTRACT_CODE = `;; Aegis Unified Protocol v3.1 (Mainnet Edition)
+const CONTRACT_CODE = `(contract-2.0)
+;; Aegis Unified Protocol v3.1 (Mainnet Edition)
 ;; Optimized for Maximum Stacks Wallet Compatibility
 ;; Purpose: Bitcoin-Backed Synthetic Liquidity & AI Risk Management
 
@@ -38,12 +39,14 @@ const CONTRACT_CODE = `;; Aegis Unified Protocol v3.1 (Mainnet Edition)
 ;; Lock native STX
 (define-public (deposit-stx (amount uint))
     (let (
-        (current-bal (default-to u0 (map-get? vault-stx-balances tx-sender)))
+        (user tx-sender)
+        (contract-recipient (as-contract tx-sender))
+        (current-bal (default-to u0 (map-get? vault-stx-balances user)))
     )
     (begin
         (asserts! (> amount u0) ERR_INVALID_AMOUNT)
-        (try! (as-contract (stx-transfer? amount (contract-caller) tx-sender)))
-        (map-set vault-stx-balances tx-sender (+ current-bal amount))
+        (try! (stx-transfer? amount user contract-recipient))
+        (map-set vault-stx-balances user (+ current-bal amount))
         (ok true))))
 
 ;; --- 3. BORROW USDCx ---
@@ -68,11 +71,15 @@ const CONTRACT_CODE = `;; Aegis Unified Protocol v3.1 (Mainnet Edition)
         (ok true)))
 
 (define-public (swap-stx-to-usdcx (amount uint))
+    (let (
+        (user tx-sender)
+        (contract-recipient (as-contract tx-sender))
+    )
     (begin
-        (try! (as-contract (stx-transfer? amount (contract-caller) tx-sender)))
+        (try! (stx-transfer? amount user contract-recipient))
         ;; Demo: 1 STX = 2.5 USDCx
-        (try! (ft-mint? aegis-usdcx (/ (* amount u25) u10) tx-sender))
-        (ok true)))
+        (try! (ft-mint? aegis-usdcx (/ (* amount u25) u10) user))
+        (ok true))))
 
 ;; --- 5. READ ONLY GETTERS ---
 (define-read-only (get-sbtc-balance (user principal))
